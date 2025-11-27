@@ -1,0 +1,999 @@
+import { useState, useMemo, useEffect, ChangeEvent } from "react";
+import { Button } from "../ui/Button";
+import { useHotel } from "../../context/HotelContext";
+import { formatCurrency } from "../../utils/formatters";
+import type { Reservation, Room, Customer } from "../../types/entities";
+
+interface CheckInDialogProps {
+  reservation: Reservation;
+  onClose: () => void;
+  onCheckInComplete: () => void;
+}
+
+type DialogStep =
+  | "details"
+  | "change-room"
+  | "change-stay-type"
+  | "confirm-change"
+  | "final-checkin";
+
+export function CheckInDialog({
+  reservation,
+  onClose,
+  onCheckInComplete,
+}: CheckInDialogProps) {
+  const { state, dispatch } = useHotel();
+  const [step, setStep] = useState<DialogStep>("details");
+  const [selectedRoomId, setSelectedRoomId] = useState<string>(
+    reservation.roomId
+  );
+  const [selectedStayTypeCombinationId, setSelectedStayTypeCombinationId] =
+    useState<string | null>(null);
+
+  // Load stay type combinations from localStorage
+  type StayTypeCombination = {
+    id: string;
+    roomTypeId: string;
+    adults: number;
+    children: number;
+    mealPlanId: string;
+    viewTypeId: string;
+    pricing: Array<{ currency: string; price: number }>;
+  };
+
+  const [stayTypeCombinations] = useState<StayTypeCombination[]>(() => {
+    try {
+      const saved = localStorage.getItem("hotel-stay-type-combinations");
+      return saved ? JSON.parse(saved) : [];
+    } catch (error) {
+      console.error("Error loading stay type combinations:", error);
+      return [];
+    }
+  });
+
+  // Editable criteria for room change
+  const [roomTypeId, setRoomTypeId] = useState<string>("");
+  const [adults, setAdults] = useState(reservation.adults);
+  const [children, setChildren] = useState(reservation.children);
+  const [notes, setNotes] = useState(reservation.notes || "");
+  const [identificationNumber, setIdentificationNumber] = useState("");
+  const [identificationDocumentName, setIdentificationDocumentName] =
+    useState("");
+  const [identificationDocumentUrl, setIdentificationDocumentUrl] =
+    useState("");
+  const [keyTag, setKeyTag] = useState("");
+  const [handoverNotes, setHandoverNotes] = useState("");
+  const [handoverStatus, setHandoverStatus] = useState<"handed" | "pending">(
+    "handed"
+  );
+
+  const currentRoom = state.rooms.find((r) => r.id === reservation.roomId);
+  const currentRoomType = state.roomTypes.find(
+    (rt) => rt.id === currentRoom?.roomTypeId
+  );
+  const customer = state.customers.find((c) => c.id === reservation.customerId);
+  const selectedRoom = state.rooms.find((r) => r.id === selectedRoomId);
+  const selectedRoomType = state.roomTypes.find(
+    (rt) => rt.id === selectedRoom?.roomTypeId
+  );
+
+  useEffect(() => {
+    setIdentificationNumber(customer?.identificationNumber ?? "");
+    setIdentificationDocumentName(customer?.identificationDocumentName ?? "");
+    setIdentificationDocumentUrl(customer?.identificationDocumentUrl ?? "");
+  }, [
+    customer?.identificationNumber,
+    customer?.identificationDocumentName,
+    customer?.identificationDocumentUrl,
+  ]);
+
+  // Calculate nights
+  const nights = useMemo(() => {
+    const checkIn = new Date(reservation.checkIn);
+    const checkOut = new Date(reservation.checkOut);
+    return Math.ceil(
+      (checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24)
+    );
+  }, [reservation.checkIn, reservation.checkOut]);
+
+  // Get available rooms based on criteria
+  const availableRooms = useMemo(() => {
+    return state.rooms.filter((room) => {
+      // Must be available
+      if (room.status !== "available" && room.id !== reservation.roomId)
+        return false;
+
+      // If room type filter is set, match it
+      if (roomTypeId && room.roomTypeId !== roomTypeId) return false;
+
+      // Check capacity
+      const roomType = state.roomTypes.find((rt) => rt.id === room.roomTypeId);
+      if (roomType && roomType.capacity < adults + children) return false;
+
+      return true;
+    });
+  }, [
+    state.rooms,
+    state.roomTypes,
+    roomTypeId,
+    adults,
+    children,
+    reservation.roomId,
+  ]);
+
+  const calculatePrice = (room: Room) => {
+    const roomType = state.roomTypes.find((rt) => rt.id === room.roomTypeId);
+    const basePrice = roomType?.basePrice || 0;
+    return basePrice * nights;
+  };
+
+  const handleDocumentUpload = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setIdentificationDocumentName(file.name);
+      setIdentificationDocumentUrl(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+    event.currentTarget.value = "";
+  };
+
+  const persistIdentificationToCustomer = () => {
+    if (!customer) return;
+    const updatedCustomer: Customer = {
+      ...customer,
+      identificationNumber: identificationNumber.trim() || undefined,
+      identificationDocumentName: identificationDocumentName || undefined,
+      identificationDocumentUrl: identificationDocumentUrl || undefined,
+    };
+    dispatch({ type: "UPDATE_CUSTOMER", payload: updatedCustomer });
+  };
+
+  const handleConfirmCheckIn = () => {
+    persistIdentificationToCustomer();
+    // Update reservation status and room
+    const updatedReservation = {
+      ...reservation,
+      roomId: selectedRoomId,
+      adults,
+      children,
+      notes,
+      status: "checked-in" as const,
+      totalAmount: calculatePrice(selectedRoom!),
+      ...(selectedStayTypeCombinationId && { stayTypeId: selectedStayTypeCombinationId }),
+    };
+
+    dispatch({ type: "UPDATE_RESERVATION", payload: updatedReservation });
+
+    // Update old room status if changed
+    if (selectedRoomId !== reservation.roomId && currentRoom) {
+      dispatch({
+        type: "UPDATE_ROOM",
+        payload: { ...currentRoom, status: "available" },
+      });
+    }
+
+    // Update new room status to occupied
+    if (selectedRoom) {
+      dispatch({
+        type: "UPDATE_ROOM",
+        payload: { ...selectedRoom, status: "occupied" },
+      });
+    }
+
+    onCheckInComplete();
+    onClose();
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
+
+  // Step 1: Display Reservation Details
+  if (step === "details") {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-bold text-slate-900">Check-In</h2>
+          <p className="text-sm text-slate-500">Reservation Details</p>
+        </div>
+
+        <div className="bg-slate-50 rounded-lg p-6 space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-medium text-slate-500 uppercase">
+                Guest Name
+              </label>
+              <p className="text-base font-semibold text-slate-900 mt-1">
+                {customer?.name || "Unknown Guest"}
+              </p>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-slate-500 uppercase">
+                Room
+              </label>
+              <p className="text-base font-semibold text-slate-900 mt-1">
+                {currentRoom?.roomNumber} ({currentRoomType?.name})
+              </p>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-slate-500 uppercase">
+                Check-In
+              </label>
+              <p className="text-base font-semibold text-slate-900 mt-1">
+                {formatDate(reservation.checkIn)}
+              </p>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-slate-500 uppercase">
+                Check-Out
+              </label>
+              <p className="text-base font-semibold text-slate-900 mt-1">
+                {formatDate(reservation.checkOut)}
+              </p>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-slate-500 uppercase">
+                Guests
+              </label>
+              <p className="text-base font-semibold text-slate-900 mt-1">
+                {reservation.adults} Adult{reservation.adults !== 1 ? "s" : ""},{" "}
+                {reservation.children} Child
+                {reservation.children !== 1 ? "ren" : ""}
+              </p>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-slate-500 uppercase">
+                Nights
+              </label>
+              <p className="text-base font-semibold text-slate-900 mt-1">
+                {nights}
+              </p>
+            </div>
+          </div>
+
+          {reservation.notes && (
+            <div>
+              <label className="text-xs font-medium text-slate-500 uppercase">
+                Special Notes
+              </label>
+              <p className="text-sm text-slate-700 mt-1">{reservation.notes}</p>
+            </div>
+          )}
+
+          <div className="bg-white border border-slate-200 rounded-lg p-4 space-y-3">
+            <div className="text-xs font-medium text-slate-500 uppercase tracking-wide">
+              Guest Identification
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="flex flex-col text-sm text-slate-600 gap-1">
+                NIC / Passport number
+                <input
+                  type="text"
+                  value={identificationNumber}
+                  onChange={(event) =>
+                    setIdentificationNumber(event.target.value)
+                  }
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                  placeholder="Enter NIC or passport"
+                />
+              </label>
+              <div className="flex flex-col gap-2 text-sm">
+                <div className="flex items-center justify-between text-xs text-slate-500">
+                  <span>ID Document</span>
+                  <span className="font-semibold text-slate-900">
+                    {identificationDocumentName || "No file uploaded"}
+                  </span>
+                </div>
+                <label className="inline-flex cursor-pointer items-center rounded-lg border border-dashed border-slate-300 px-3 py-2 text-xs font-semibold text-slate-600 transition hover:border-slate-500 hover:shadow-sm">
+                  <input
+                    type="file"
+                    accept="image/*,.pdf"
+                    className="hidden"
+                    onChange={handleDocumentUpload}
+                  />
+                  Upload document
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div className="pt-4 border-t border-slate-200">
+            <div className="flex justify-between items-center">
+              <span className="text-sm font-medium text-slate-600">
+                Total Amount
+              </span>
+              <span className="text-2xl font-bold text-slate-900 no-underline">
+                {formatCurrency(reservation.totalAmount)}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex gap-3 justify-end">
+          <Button variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button variant="secondary" onClick={() => setStep("change-room")}>
+            Change Room
+          </Button>
+          <Button variant="secondary" onClick={() => setStep("change-stay-type")}>
+            Change Stay Type
+          </Button>
+          <Button onClick={() => setStep("final-checkin")}>
+            Confirm Check-In
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Step 2: Room Change - Edit Options
+  if (step === "change-room") {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-bold text-slate-900">Change Room</h2>
+          <p className="text-sm text-slate-500">
+            Update preferences and search for available rooms
+          </p>
+        </div>
+
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+              Room Type
+            </label>
+            <select
+              value={roomTypeId}
+              onChange={(e) => setRoomTypeId(e.target.value)}
+              className="w-full rounded-lg border border-slate-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">All Types</option>
+              {state.roomTypes.map((type) => (
+                <option key={type.id} value={type.id}>
+                  {type.name} - {formatCurrency(type.basePrice)}/night
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Adults
+              </label>
+              <input
+                type="number"
+                min="1"
+                value={adults}
+                onChange={(e) => setAdults(parseInt(e.target.value) || 1)}
+                className="w-full rounded-lg border border-slate-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Children
+              </label>
+              <input
+                type="number"
+                min="0"
+                value={children}
+                onChange={(e) => setChildren(parseInt(e.target.value) || 0)}
+                className="w-full rounded-lg border border-slate-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+              Special Notes
+            </label>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={3}
+              className="w-full rounded-lg border border-slate-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Any special requests or preferences..."
+            />
+          </div>
+        </div>
+
+        <div className="bg-slate-50 rounded-lg p-4">
+          <h3 className="font-semibold text-slate-900 mb-4">
+            Available Rooms ({availableRooms.length})
+          </h3>
+
+          {availableRooms.length === 0 ? (
+            <p className="text-slate-500 text-center py-4">
+              No rooms available matching your criteria
+            </p>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-h-[500px] overflow-y-auto pr-2 scroll-smooth">
+              {availableRooms.map((room) => {
+                const roomType = state.roomTypes.find(
+                  (rt) => rt.id === room.roomTypeId
+                );
+                const isCurrent = room.id === reservation.roomId;
+                const isSelected = room.id === selectedRoomId;
+                return (
+                  <div
+                    key={room.id}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedRoomId(room.id);
+                      setStep("confirm-change");
+                    }}
+                    className={`relative border-2 rounded-xl p-5 cursor-pointer transition-all duration-200 ease-out hover:scale-[1.02] active:scale-[0.98] min-h-[200px] flex flex-col ${isSelected
+                      ? "border-blue-500 bg-blue-50 shadow-lg"
+                      : isCurrent
+                        ? "border-blue-300 bg-blue-50"
+                        : "border-slate-200 bg-white hover:border-blue-400 hover:shadow-md"
+                      }`}
+                  >
+                    {/* Status Badge */}
+                    <div className="absolute top-3 right-3">
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap ${isCurrent
+                          ? "bg-blue-600 text-white"
+                          : "bg-green-600 text-white"
+                          }`}
+                      >
+                        {isCurrent ? "Same Room" : "Available"}
+                      </span>
+                    </div>
+
+                    {/* Room Number */}
+                    <div className="text-3xl font-bold text-slate-900 mb-2 pr-20">
+                      Room {room.roomNumber}
+                    </div>
+
+                    {/* Room Type */}
+                    <div className="text-base font-semibold text-slate-700 mb-4">
+                      {roomType?.name}
+                    </div>
+
+                    {/* Pricing */}
+                    <div className="mt-auto space-y-2">
+                      <div className="flex justify-between items-center text-sm border-b border-slate-200 pb-2">
+                        <span className="text-slate-600">Rate/Night</span>
+                        <span className="font-semibold text-slate-900 whitespace-nowrap">
+                          {formatCurrency(roomType?.basePrice || 0)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center pt-1">
+                        <span className="text-sm text-slate-600">
+                          {nights} Night{nights !== 1 ? "s" : ""}
+                        </span>
+                        <span className="text-xl font-bold text-slate-900 whitespace-nowrap">
+                          {formatCurrency(calculatePrice(room))}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Select Indicator */}
+                    {isSelected && (
+                      <div className="mt-3 flex items-center justify-center text-blue-600 font-bold text-sm bg-blue-100 rounded-lg py-2">
+                        <svg
+                          className="w-5 h-5 mr-1"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                        Selected
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        <div className="flex gap-3 justify-end">
+          <Button variant="secondary" onClick={() => setStep("details")}>
+            Back
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Step 2b: Change Stay Type
+  if (step === "change-stay-type") {
+    const filteredCombos = stayTypeCombinations.filter(
+      (combo) => combo.roomTypeId === currentRoom?.roomTypeId
+    );
+
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-bold text-slate-900">Change Stay Type</h2>
+          <p className="text-sm text-slate-500">
+            Select a different stay type configuration for Room {currentRoom?.roomNumber}
+          </p>
+        </div>
+
+        <div className="bg-slate-50 rounded-lg p-4">
+          <h3 className="font-semibold text-slate-900 mb-2">
+            Available Stay Types for {currentRoomType?.name}
+          </h3>
+          <p className="text-xs text-slate-600 mb-4">
+            Choose a different stay type configuration for your room
+          </p>
+
+          {filteredCombos.length === 0 ? (
+            <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-8 text-center space-y-4">
+              <div className="flex justify-center">
+                <svg
+                  className="w-16 h-16 text-blue-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+                  />
+                </svg>
+              </div>
+              <div>
+                <h4 className="text-lg font-bold text-slate-900 mb-2">
+                  No Stay Type Combinations Available
+                </h4>
+                <p className="text-sm text-slate-600 mb-4 max-w-md mx-auto">
+                  There are no stay type combinations configured for{" "}
+                  <strong>{currentRoomType?.name}</strong> rooms yet.
+                </p>
+                <div className="bg-white border border-blue-200 rounded-lg p-4 text-left max-w-md mx-auto">
+                  <p className="text-sm text-slate-700 mb-2">
+                    <strong>To add stay type combinations:</strong>
+                  </p>
+                  <ol className="text-sm text-slate-600 space-y-1 list-decimal list-inside">
+                    <li>Navigate to <strong>Rooms → Stay Types</strong> in the sidebar</li>
+                    <li>Click <strong>"Add Combination"</strong></li>
+                    <li>Select room type, meal plan, view type, and set pricing</li>
+                    <li>Save and return here to select your stay type</li>
+                  </ol>
+                </div>
+              </div>
+              <div className="pt-2">
+                <p className="text-xs text-slate-500">
+                  You can continue with the current room configuration by clicking "Back"
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-h-[500px] overflow-y-auto pr-2 scroll-smooth">
+              {stayTypeCombinations
+                .filter((combo) => combo.roomTypeId === currentRoom?.roomTypeId)
+                .map((combo) => {
+                  const roomType = state.roomTypes.find(
+                    (rt) => rt.id === combo.roomTypeId
+                  );
+                  const mealPlan = state.mealPlans.find(
+                    (mp) => mp.id === combo.mealPlanId
+                  );
+                  const viewType = state.viewTypes.find(
+                    (vt) => vt.id === combo.viewTypeId
+                  );
+
+                  // Get price from combination - with safety check for Edge compatibility
+                  const comboPrice = combo.pricing?.[0]?.price || 0;
+                  const totalPrice = comboPrice * nights;
+                  const isSelected = selectedStayTypeCombinationId === combo.id;
+
+                  return (
+                    <div
+                      key={combo.id}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedStayTypeCombinationId(combo.id);
+                        setAdults(combo.adults);
+                        setChildren(combo.children);
+                      }}
+                      className={`relative border-2 rounded-xl p-5 cursor-pointer transition-all duration-200 ease-out hover:scale-[1.02] active:scale-[0.98] min-h-[200px] flex flex-col ${isSelected
+                        ? "border-blue-500 bg-blue-50 shadow-lg"
+                        : "border-slate-200 bg-white hover:border-blue-400 hover:shadow-md"
+                        }`}
+                    >
+                      {/* Capacity Badge */}
+                      <div className="absolute top-3 right-3">
+                        <span className="px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap bg-purple-600 text-white">
+                          {combo.adults} Adult{combo.adults !== 1 ? "s" : ""}
+                          {combo.children > 0 &&
+                            ` + ${combo.children} Child${combo.children !== 1 ? "ren" : ""
+                            }`}
+                        </span>
+                      </div>
+
+                      {/* Room Type */}
+                      <div className="text-2xl font-bold text-slate-900 mb-2 pr-20">
+                        {roomType?.name}
+                      </div>
+
+                      {/* Configuration Details */}
+                      <div className="space-y-2 mb-4">
+                        {viewType && (
+                          <div className="flex items-center gap-2 text-sm text-slate-700">
+                            <svg
+                              className="w-4 h-4 text-blue-600"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                              />
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                              />
+                            </svg>
+                            <span className="font-medium">{viewType.name}</span>
+                          </div>
+                        )}
+                        {mealPlan && (
+                          <div className="flex items-center gap-2 text-sm text-slate-700">
+                            <svg
+                              className="w-4 h-4 text-green-600"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                              />
+                            </svg>
+                            <span className="font-medium">
+                              {mealPlan.name} ({mealPlan.code})
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Pricing */}
+                      <div className="mt-auto space-y-2">
+                        <div className="flex justify-between items-center text-sm border-b border-slate-200 pb-2">
+                          <span className="text-slate-600">Rate/Night</span>
+                          <span className="font-semibold text-slate-900 whitespace-nowrap">
+                            {formatCurrency(comboPrice)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center pt-1">
+                          <span className="text-sm text-slate-600">
+                            {nights} Night{nights !== 1 ? "s" : ""}
+                          </span>
+                          <span className="text-xl font-bold text-slate-900 whitespace-nowrap">
+                            {formatCurrency(totalPrice)}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Select Indicator */}
+                      {isSelected && (
+                        <div className="mt-3 flex items-center justify-center text-blue-600 font-bold text-sm bg-blue-100 rounded-lg py-2">
+                          <svg
+                            className="w-5 h-5 mr-1"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                          Selected
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+            </div>
+          )}
+        </div>
+
+        <div className="flex gap-3 justify-end">
+          <Button variant="secondary" onClick={() => setStep("details")}>
+            Back
+          </Button>
+          <Button
+            onClick={() => setStep("final-checkin")}
+            disabled={!selectedStayTypeCombinationId}
+          >
+            Confirm Stay Type
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Step 3: Confirm Room Change
+  if (step === "confirm-change") {
+    const oldPrice = calculatePrice(currentRoom!);
+    const newPrice = calculatePrice(selectedRoom!);
+    const priceDiff = newPrice - oldPrice;
+
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-bold text-slate-900">
+            Confirm Room Change
+          </h2>
+          <p className="text-sm text-slate-500">
+            Review the changes before proceeding
+          </p>
+        </div>
+
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+          <p className="text-amber-900 font-medium">
+            Are you sure you want to switch from Room {currentRoom?.roomNumber}{" "}
+            to Room {selectedRoom?.roomNumber}?
+          </p>
+        </div>
+
+        <div className="grid grid-cols-2 gap-6">
+          <div className="bg-slate-50 rounded-lg p-4">
+            <h3 className="text-sm font-semibold text-slate-500 uppercase mb-3">
+              Current Room
+            </h3>
+            <p className="text-2xl font-bold text-slate-900 mb-2">
+              {currentRoom?.roomNumber}
+            </p>
+            <p className="text-slate-600 mb-1">{currentRoomType?.name}</p>
+            <p className="text-sm text-slate-500">
+              {formatCurrency(currentRoomType?.basePrice || 0)}/night × {nights}{" "}
+              nights
+            </p>
+            <p className="text-lg font-semibold text-slate-900 mt-2">
+              {formatCurrency(oldPrice)}
+            </p>
+          </div>
+
+          <div className="bg-blue-50 rounded-lg p-4 border-2 border-blue-300">
+            <h3 className="text-sm font-semibold text-blue-600 uppercase mb-3">
+              New Room
+            </h3>
+            <p className="text-2xl font-bold text-blue-900 mb-2">
+              {selectedRoom?.roomNumber}
+            </p>
+            <p className="text-blue-700 mb-1">{selectedRoomType?.name}</p>
+            <p className="text-sm text-blue-600">
+              {formatCurrency(selectedRoomType?.basePrice || 0)}/night ×{" "}
+              {nights} nights
+            </p>
+            <p className="text-lg font-semibold text-blue-900 mt-2">
+              {formatCurrency(newPrice)}
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-slate-100 rounded-lg p-4">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-slate-600">Price Difference</span>
+            <span
+              className={`text-lg font-bold ${priceDiff > 0
+                ? "text-red-600"
+                : priceDiff < 0
+                  ? "text-green-600"
+                  : "text-slate-900"
+                }`}
+            >
+              {priceDiff > 0 ? "+" : ""}
+              {formatCurrency(Math.abs(priceDiff))}
+            </span>
+          </div>
+          <div className="flex justify-between items-center pt-2 border-t border-slate-200">
+            <span className="font-semibold text-slate-900">
+              New Total Amount
+            </span>
+            <span className="text-2xl font-bold text-slate-900">
+              {formatCurrency(newPrice)}
+            </span>
+          </div>
+        </div>
+
+        <div className="flex gap-3 justify-end">
+          <Button variant="secondary" onClick={() => setStep("change-room")}>
+            Back
+          </Button>
+          <Button onClick={() => setStep("final-checkin")}>
+            Confirm Room Change
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Step 4: Final Check-In Confirmation
+  if (step === "final-checkin") {
+    const finalRoom = selectedRoom || currentRoom;
+    const finalRoomType = state.roomTypes.find(
+      (rt) => rt.id === finalRoom?.roomTypeId
+    );
+    const finalPrice = calculatePrice(finalRoom!);
+    const selectedStayTypeCombination = stayTypeCombinations.find(
+      (combo) => combo.id === selectedStayTypeCombinationId
+    );
+
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-bold text-slate-900">Final Check-In</h2>
+          <p className="text-sm text-slate-500">
+            Confirm all details before checking in
+          </p>
+        </div>
+
+        <div className="bg-green-50 border border-green-200 rounded-lg p-6 space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-medium text-green-700 uppercase">
+                Guest
+              </label>
+              <p className="text-base font-semibold text-green-900 mt-1">
+                {customer?.name}
+              </p>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-green-700 uppercase">
+                Room
+              </label>
+              <p className="text-base font-semibold text-green-900 mt-1">
+                {finalRoom?.roomNumber} ({finalRoomType?.name})
+              </p>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-green-700 uppercase">
+                Check-In
+              </label>
+              <p className="text-base font-semibold text-green-900 mt-1">
+                {formatDate(reservation.checkIn)}
+              </p>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-green-700 uppercase">
+                Check-Out
+              </label>
+              <p className="text-base font-semibold text-green-900 mt-1">
+                {formatDate(reservation.checkOut)}
+              </p>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-green-700 uppercase">
+                Guests
+              </label>
+              <p className="text-base font-semibold text-green-900 mt-1">
+                {adults} Adult{adults !== 1 ? "s" : ""}, {children} Child
+                {children !== 1 ? "ren" : ""}
+              </p>
+            </div>
+            {selectedStayTypeCombination && (
+              <div>
+                <label className="text-xs font-medium text-green-700 uppercase">
+                  Stay Type Configuration
+                </label>
+                <div className="mt-1 space-y-1">
+                  <p className="text-sm font-semibold text-green-900">
+                    {state.roomTypes.find((rt) => rt.id === selectedStayTypeCombination.roomTypeId)?.name}
+                  </p>
+                  <p className="text-xs text-green-700">
+                    {state.viewTypes.find((vt) => vt.id === selectedStayTypeCombination.viewTypeId)?.name} • {state.mealPlans.find((mp) => mp.id === selectedStayTypeCombination.mealPlanId)?.name}
+                  </p>
+                </div>
+              </div>
+            )}
+            <div>
+              <label className="text-xs font-medium text-green-700 uppercase">
+                Total Amount
+              </label>
+              <p className="text-xl font-bold text-green-900 mt-1">
+                {formatCurrency(finalPrice)}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <p className="text-sm text-blue-900">
+            ✓ Room will be marked as <strong>Occupied</strong>
+            <br />✓ Reservation status will be updated to{" "}
+            <strong>Checked In</strong>
+            <br />✓ Check-in timestamp will be recorded
+          </p>
+        </div>
+
+        <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 space-y-4">
+          <div>
+            <label className="text-xs font-medium text-slate-500 uppercase">
+              Room Key Handover
+            </label>
+          </div>
+          <div>
+            <label className="text-xs font-medium text-slate-500 uppercase">
+              Key Tag / Number
+            </label>
+            <input
+              type="text"
+              value={keyTag}
+              onChange={(event) => setKeyTag(event.target.value)}
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              placeholder="Record the key or card number"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-slate-500 uppercase">
+              Notes
+            </label>
+            <textarea
+              value={handoverNotes}
+              onChange={(event) => setHandoverNotes(event.target.value)}
+              rows={3}
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              placeholder="Optional notes about the handover"
+            />
+          </div>
+          <div className="space-y-1">
+            <div className="text-xs font-medium text-slate-500 uppercase">
+              Key Handover Status
+            </div>
+            <div className="flex flex-wrap gap-3 text-sm text-slate-700">
+              <label className="inline-flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="handoverStatus"
+                  value="handed"
+                  checked={handoverStatus === "handed"}
+                  onChange={() => setHandoverStatus("handed")}
+                  className="text-emerald-600"
+                />
+                Key handed to guest
+              </label>
+              <label className="inline-flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="handoverStatus"
+                  value="pending"
+                  checked={handoverStatus === "pending"}
+                  onChange={() => setHandoverStatus("pending")}
+                  className="text-emerald-600"
+                />
+                Pending / left at front desk
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex gap-3 justify-end">
+          <Button variant="secondary" onClick={() => setStep("details")}>
+            Back to Details
+          </Button>
+          <Button onClick={handleConfirmCheckIn}>Confirm Check-In</Button>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
+}
