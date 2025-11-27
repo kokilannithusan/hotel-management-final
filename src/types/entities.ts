@@ -64,12 +64,14 @@ export interface RoomType {
 export interface ViewType {
   id: string;
   name: string;
+  priceDifference?: number;
 }
 
 export interface Amenity {
   id: string;
   name: string;
   icon?: string;
+  price?: number;
 }
 
 export interface RoomArea {

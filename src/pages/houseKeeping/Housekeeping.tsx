@@ -1128,6 +1128,7 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
   };
 
   // Manager CRUD
+  // @ts-ignore - Function may be used for future create functionality
   const openCreateProfile = () => {
     setEditingProfile(null);
     setProfileForm({
