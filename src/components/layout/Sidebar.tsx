@@ -16,9 +16,6 @@ import {
   Shield,
   FileCheck,
   Coins,
-  PartyPopper,
-  Plus,
-  Package,
   Mail,
   Eye,
   Grid3x3,
@@ -78,33 +75,6 @@ const navItems: NavItem[] = [
     icon: <Users className="w-5 h-5" />,
   },
   {
-    path: "/events",
-    label: "Event Management",
-    icon: <PartyPopper className="w-5 h-5" />,
-    children: [
-      {
-        path: "/events/management",
-        label: "Events",
-        icon: <Calendar className="w-4 h-4" />,
-      },
-      {
-        path: "/events/packages",
-        label: "Packages",
-        icon: <Package className="w-4 h-4" />,
-      },
-      {
-        path: "/events/bookings",
-        label: "Bookings",
-        icon: <ClipboardList className="w-4 h-4" />,
-      },
-      {
-        path: "/events/create-booking",
-        label: "Create Booking",
-        icon: <Plus className="w-4 h-4" />,
-      },
-    ],
-  },
-  {
     path: "/invoicing",
     label: "Invoicing",
     icon: <DollarSign className="w-5 h-5" />,
@@ -128,16 +98,6 @@ const navItems: NavItem[] = [
         path: "/invoicing/credit-notes",
         label: "Credit Notes",
         icon: <FileText className="w-4 h-4" />,
-      },
-      {
-        path: "/invoicing/event-invoices",
-        label: "Event Invoices",
-        icon: <PartyPopper className="w-4 h-4" />,
-      },
-      {
-        path: "/invoicing/additional",
-        label: "Additional Billing",
-        icon: <DollarSign className="w-4 h-4" />,
       },
     ],
   },
@@ -213,7 +173,7 @@ const navItems: NavItem[] = [
       {
         path: "/channels/registration",
         label: "Reservation Type",
-        icon: <Plus className="w-4 h-4" />,
+        icon: <FileText className="w-4 h-4" />,
       },
       {
         path: "/channels/channels",
@@ -234,23 +194,6 @@ const navItems: NavItem[] = [
         path: "/channels/price-grid",
         label: "Channel Price",
         icon: <DollarSign className="w-4 h-4" />,
-      },
-    ],
-  },
-  {
-    path: "/additional-service",
-    label: "Additional Service",
-    icon: <Package className="w-5 h-5" />,
-    children: [
-      {
-        path: "/additional-service/manage-items",
-        label: "Manage Service Items",
-        icon: <Package className="w-4 h-4" />,
-      },
-      {
-        path: "/additional-service/reservation-addon",
-        label: "Add-on Service",
-        icon: <Calendar className="w-4 h-4" />,
       },
     ],
   },

@@ -51,6 +51,8 @@ export const Amenities: React.FC = () => {
   const [formData, setFormData] = useState({ name: "", icon: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
 
   useEffect(() => {
@@ -210,6 +212,19 @@ export const Amenities: React.FC = () => {
     }
   };
 
+  // Pagination logic
+  const totalPages = Math.ceil(amenities.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedAmenities = amenities.slice(startIndex, endIndex);
+
+  // Reset to page 1 if current page exceeds total pages
+  React.useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(1);
+    }
+  }, [currentPage, totalPages]);
+
   const columns = [
     { key: "name", header: "Name" },
     {
@@ -288,10 +303,57 @@ export const Amenities: React.FC = () => {
             <div className="text-gray-500">Loading amenities...</div>
           </div>
         ) : (
-          <Table
-            columns={columns}
-            data={Array.isArray(amenities) ? amenities : []}
-          />
+          <>
+            <Table
+              columns={columns}
+              data={Array.isArray(paginatedAmenities) ? paginatedAmenities : []}
+            />
+
+            {/* Pagination Controls */}
+            {amenities.length > 0 && (
+              <div className="mt-4 flex items-center justify-between border-t border-slate-200 pt-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-slate-600">Items per page:</span>
+                  <select
+                    value={itemsPerPage}
+                    onChange={(e) => {
+                      setItemsPerPage(Number(e.target.value));
+                      setCurrentPage(1);
+                    }}
+                    className="rounded border border-slate-300 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value={10}>10</option>
+                    <option value={25}>25</option>
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                  </select>
+                  <span className="text-sm text-slate-600">
+                    Showing {startIndex + 1} to {Math.min(endIndex, amenities.length)} of {amenities.length} entries
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setCurrentPage(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="px-3 py-1 text-sm rounded border border-slate-300 bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Previous
+                  </button>
+                  <span className="text-sm text-slate-600">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <button
+                    onClick={() => setCurrentPage(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="px-3 py-1 text-sm rounded border border-slate-300 bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </Card>
 

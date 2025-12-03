@@ -30,12 +30,6 @@ import {
   HousekeepingRoom,
   HotelSettings,
   User,
-  Event,
-  EventPackage,
-  AdditionalService,
-  Hall,
-  EventInvoice,
-  EventBooking,
 } from "../types/entities";
 import { getStorageItem, setStorageItem, storageKeys } from "../utils/storage";
 import {
@@ -61,12 +55,6 @@ import {
   mockHousekeeping,
   mockSettings,
   mockUsers,
-  mockEvents,
-  mockEventPackages,
-  mockAdditionalServices,
-  mockHalls,
-  mockEventInvoices,
-  mockEventBookings,
 } from "../data/mockData";
 import { initializeSampleStayTypeCombinations } from "../utils/stayTypeCombinations";
 
@@ -127,25 +115,7 @@ type HotelAction =
   | { type: "UPDATE_SETTINGS"; payload: HotelSettings }
   | { type: "ADD_USER"; payload: User }
   | { type: "UPDATE_USER"; payload: User }
-  | { type: "DELETE_USER"; payload: string }
-  | { type: "ADD_EVENT"; payload: Event }
-  | { type: "UPDATE_EVENT"; payload: Event }
-  | { type: "DELETE_EVENT"; payload: string }
-  | { type: "ADD_EVENT_PACKAGE"; payload: EventPackage }
-  | { type: "UPDATE_EVENT_PACKAGE"; payload: EventPackage }
-  | { type: "DELETE_EVENT_PACKAGE"; payload: string }
-  | { type: "ADD_ADDITIONAL_SERVICE"; payload: AdditionalService }
-  | { type: "UPDATE_ADDITIONAL_SERVICE"; payload: AdditionalService }
-  | { type: "DELETE_ADDITIONAL_SERVICE"; payload: string }
-  | { type: "ADD_HALL"; payload: Hall }
-  | { type: "UPDATE_HALL"; payload: Hall }
-  | { type: "DELETE_HALL"; payload: string }
-  | { type: "ADD_EVENT_INVOICE"; payload: EventInvoice }
-  | { type: "UPDATE_EVENT_INVOICE"; payload: EventInvoice }
-  | { type: "DELETE_EVENT_INVOICE"; payload: string }
-  | { type: "ADD_EVENT_BOOKING"; payload: EventBooking }
-  | { type: "UPDATE_EVENT_BOOKING"; payload: EventBooking }
-  | { type: "DELETE_EVENT_BOOKING"; payload: string };
+  | { type: "DELETE_USER"; payload: string };
 
 const initialState: HotelState = {
   customers: [],
@@ -170,12 +140,6 @@ const initialState: HotelState = {
   housekeeping: [],
   settings: null,
   users: [],
-  events: [],
-  eventPackages: [],
-  additionalServices: [],
-  halls: [],
-  eventInvoices: [],
-  eventBookings: [],
 };
 
 const hotelReducer = (state: HotelState, action: HotelAction): HotelState => {
@@ -456,117 +420,6 @@ const hotelReducer = (state: HotelState, action: HotelAction): HotelState => {
         users: state.users.filter((u) => u.id !== action.payload),
       };
 
-    // Event Management Cases
-    case "ADD_EVENT":
-      return { ...state, events: [...state.events, action.payload] };
-    case "UPDATE_EVENT":
-      return {
-        ...state,
-        events: state.events.map((e) =>
-          e.id === action.payload.id ? action.payload : e
-        ),
-      };
-    case "DELETE_EVENT":
-      return {
-        ...state,
-        events: state.events.filter((e) => e.id !== action.payload),
-      };
-
-    case "ADD_EVENT_PACKAGE":
-      return {
-        ...state,
-        eventPackages: [...state.eventPackages, action.payload],
-      };
-    case "UPDATE_EVENT_PACKAGE":
-      return {
-        ...state,
-        eventPackages: state.eventPackages.map((p) =>
-          p.id === action.payload.id ? action.payload : p
-        ),
-      };
-    case "DELETE_EVENT_PACKAGE":
-      return {
-        ...state,
-        eventPackages: state.eventPackages.filter(
-          (p) => p.id !== action.payload
-        ),
-      };
-
-    case "ADD_ADDITIONAL_SERVICE":
-      return {
-        ...state,
-        additionalServices: [...state.additionalServices, action.payload],
-      };
-    case "UPDATE_ADDITIONAL_SERVICE":
-      return {
-        ...state,
-        additionalServices: state.additionalServices.map((s) =>
-          s.id === action.payload.id ? action.payload : s
-        ),
-      };
-    case "DELETE_ADDITIONAL_SERVICE":
-      return {
-        ...state,
-        additionalServices: state.additionalServices.filter(
-          (s) => s.id !== action.payload
-        ),
-      };
-
-    case "ADD_HALL":
-      return { ...state, halls: [...state.halls, action.payload] };
-    case "UPDATE_HALL":
-      return {
-        ...state,
-        halls: state.halls.map((h) =>
-          h.id === action.payload.id ? action.payload : h
-        ),
-      };
-    case "DELETE_HALL":
-      return {
-        ...state,
-        halls: state.halls.filter((h) => h.id !== action.payload),
-      };
-
-    case "ADD_EVENT_INVOICE":
-      return {
-        ...state,
-        eventInvoices: [...state.eventInvoices, action.payload],
-      };
-    case "UPDATE_EVENT_INVOICE":
-      return {
-        ...state,
-        eventInvoices: state.eventInvoices.map((i) =>
-          i.id === action.payload.id ? action.payload : i
-        ),
-      };
-    case "DELETE_EVENT_INVOICE":
-      return {
-        ...state,
-        eventInvoices: state.eventInvoices.filter(
-          (i) => i.id !== action.payload
-        ),
-      };
-
-    case "ADD_EVENT_BOOKING":
-      return {
-        ...state,
-        eventBookings: [...state.eventBookings, action.payload],
-      };
-    case "UPDATE_EVENT_BOOKING":
-      return {
-        ...state,
-        eventBookings: state.eventBookings.map((b) =>
-          b.id === action.payload.id ? action.payload : b
-        ),
-      };
-    case "DELETE_EVENT_BOOKING":
-      return {
-        ...state,
-        eventBookings: state.eventBookings.filter(
-          (b) => b.id !== action.payload
-        ),
-      };
-
     default:
       return state;
   }
@@ -576,26 +429,6 @@ interface HotelContextType {
   state: HotelState;
   dispatch: React.Dispatch<HotelAction>;
   initializeData: () => void;
-  // Events CRUD
-  createEvent: (event: Omit<Event, "id" | "createdAt" | "updatedAt">) => Event;
-  updateEvent: (event: Event) => Event;
-  deleteEvent: (eventId: string) => void;
-  // Event Packages CRUD
-  createEventPackage: (
-    eventPackage: Omit<EventPackage, "id" | "createdAt" | "updatedAt">
-  ) => EventPackage;
-  updateEventPackage: (eventPackage: EventPackage) => EventPackage;
-  deleteEventPackage: (packageId: string) => void;
-  // Additional Services CRUD
-  createAdditionalService: (
-    service: Omit<AdditionalService, "id" | "createdAt" | "updatedAt">
-  ) => AdditionalService;
-  updateAdditionalService: (service: AdditionalService) => AdditionalService;
-  deleteAdditionalService: (serviceId: string) => void;
-  // Halls CRUD
-  createHall: (hall: Omit<Hall, "id" | "createdAt" | "updatedAt">) => Hall;
-  updateHall: (hall: Hall) => Hall;
-  deleteHall: (hallId: string) => void;
 }
 
 const HotelContext = createContext<HotelContextType | undefined>(undefined);
@@ -664,26 +497,6 @@ export const HotelProvider: React.FC<{ children: ReactNode }> = ({
     const settings = getStorageItem(storageKeys.settings, mockSettings);
     const users = getStorageItem(storageKeys.users, mockUsers);
 
-    // Event Management Data
-    const events = getStorageItem(storageKeys.events, mockEvents);
-    const eventPackages = getStorageItem(
-      storageKeys.eventPackages,
-      mockEventPackages
-    );
-    const additionalServices = getStorageItem(
-      storageKeys.additionalServices,
-      mockAdditionalServices
-    );
-    const halls = getStorageItem(storageKeys.halls || "hotel_halls", mockHalls);
-    const eventInvoices = getStorageItem(
-      storageKeys.eventInvoices,
-      mockEventInvoices
-    );
-    const eventBookings = getStorageItem(
-      storageKeys.eventBookings,
-      mockEventBookings
-    );
-
     // Backfill defaults for new fields if missing (migration)
     const channelsWithPercent = (channels || []).map((c) => {
       if (c.priceModifierPercent !== undefined) return c;
@@ -748,18 +561,6 @@ export const HotelProvider: React.FC<{ children: ReactNode }> = ({
       housekeeping: housekeeping.length > 0 ? housekeeping : mockHousekeeping,
       settings: settings || mockSettings,
       users: users.length > 0 ? users : mockUsers,
-      events: events.length > 0 ? events : mockEvents,
-      eventPackages:
-        eventPackages.length > 0 ? eventPackages : mockEventPackages,
-      additionalServices:
-        additionalServices.length > 0
-          ? additionalServices
-          : mockAdditionalServices,
-      halls: halls.length > 0 ? halls : mockHalls,
-      eventInvoices:
-        eventInvoices.length > 0 ? eventInvoices : mockEventInvoices,
-      eventBookings:
-        eventBookings.length > 0 ? eventBookings : mockEventBookings,
     };
 
     dispatch({ type: "INIT_STATE", payload: defaultState });
@@ -788,15 +589,6 @@ export const HotelProvider: React.FC<{ children: ReactNode }> = ({
       setStorageItem(storageKeys.housekeeping, defaultState.housekeeping);
       setStorageItem(storageKeys.settings, defaultState.settings);
       setStorageItem(storageKeys.users, defaultState.users);
-      setStorageItem("hotel_events", defaultState.events);
-      setStorageItem("hotel_event_packages", defaultState.eventPackages);
-      setStorageItem(
-        "hotel_additional_services",
-        defaultState.additionalServices
-      );
-      setStorageItem("hotel_halls", defaultState.halls);
-      setStorageItem("hotel_event_invoices", defaultState.eventInvoices);
-      setStorageItem("hotel_event_bookings", defaultState.eventBookings);
     }
 
     // Initialize sample stay type combinations after data is loaded
@@ -825,121 +617,8 @@ export const HotelProvider: React.FC<{ children: ReactNode }> = ({
           }
         }
       });
-      // Persist event-related data
-      setStorageItem(storageKeys.events, state.events);
-      setStorageItem(storageKeys.eventPackages, state.eventPackages);
-      setStorageItem(storageKeys.additionalServices, state.additionalServices);
-      setStorageItem(storageKeys.halls, state.halls);
-      setStorageItem(storageKeys.eventInvoices, state.eventInvoices);
-      setStorageItem(storageKeys.eventBookings, state.eventBookings);
     }
   }, [state, isInitialized]);
-
-  // Events CRUD functions
-  const createEvent = (
-    event: Omit<Event, "id" | "createdAt" | "updatedAt">
-  ) => {
-    const newEvent: Event = {
-      ...event,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    dispatch({ type: "ADD_EVENT", payload: newEvent });
-    return newEvent;
-  };
-
-  const updateEvent = (event: Event) => {
-    const updatedEvent = {
-      ...event,
-      updatedAt: new Date().toISOString(),
-    };
-    dispatch({ type: "UPDATE_EVENT", payload: updatedEvent });
-    return updatedEvent;
-  };
-
-  const deleteEvent = (eventId: string) => {
-    dispatch({ type: "DELETE_EVENT", payload: eventId });
-  };
-
-  // Event Packages CRUD functions
-  const createEventPackage = (
-    eventPackage: Omit<EventPackage, "id" | "createdAt" | "updatedAt">
-  ) => {
-    const newEventPackage: EventPackage = {
-      ...eventPackage,
-      id: `pkg-${Date.now()}`,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    dispatch({ type: "ADD_EVENT_PACKAGE", payload: newEventPackage });
-    return newEventPackage;
-  };
-
-  const updateEventPackage = (eventPackage: EventPackage) => {
-    const updatedEventPackage = {
-      ...eventPackage,
-      updatedAt: new Date().toISOString(),
-    };
-    dispatch({ type: "UPDATE_EVENT_PACKAGE", payload: updatedEventPackage });
-    return updatedEventPackage;
-  };
-
-  const deleteEventPackage = (packageId: string) => {
-    dispatch({ type: "DELETE_EVENT_PACKAGE", payload: packageId });
-  };
-
-  // Additional Services CRUD functions
-  const createAdditionalService = (
-    service: Omit<AdditionalService, "id" | "createdAt" | "updatedAt">
-  ) => {
-    const newService: AdditionalService = {
-      ...service,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    dispatch({ type: "ADD_ADDITIONAL_SERVICE", payload: newService });
-    return newService;
-  };
-
-  const updateAdditionalService = (service: AdditionalService) => {
-    const updatedService = {
-      ...service,
-      updatedAt: new Date().toISOString(),
-    };
-    dispatch({ type: "UPDATE_ADDITIONAL_SERVICE", payload: updatedService });
-    return updatedService;
-  };
-
-  const deleteAdditionalService = (serviceId: string) => {
-    dispatch({ type: "DELETE_ADDITIONAL_SERVICE", payload: serviceId });
-  };
-
-  // Halls CRUD functions
-  const createHall = (hall: Omit<Hall, "id" | "createdAt" | "updatedAt">) => {
-    const newHall: Hall = {
-      ...hall,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    dispatch({ type: "ADD_HALL", payload: newHall });
-    return newHall;
-  };
-
-  const updateHall = (hall: Hall) => {
-    const updatedHall = {
-      ...hall,
-      updatedAt: new Date().toISOString(),
-    };
-    dispatch({ type: "UPDATE_HALL", payload: updatedHall });
-    return updatedHall;
-  };
-
-  const deleteHall = (hallId: string) => {
-    dispatch({ type: "DELETE_HALL", payload: hallId });
-  };
 
   // Don't render children until data is initialized to prevent flashing
   if (!isInitialized) {
@@ -952,18 +631,6 @@ export const HotelProvider: React.FC<{ children: ReactNode }> = ({
         state,
         dispatch,
         initializeData,
-        createEvent,
-        updateEvent,
-        deleteEvent,
-        createEventPackage,
-        updateEventPackage,
-        deleteEventPackage,
-        createAdditionalService,
-        updateAdditionalService,
-        deleteAdditionalService,
-        createHall,
-        updateHall,
-        deleteHall,
       }}
     >
       {children}

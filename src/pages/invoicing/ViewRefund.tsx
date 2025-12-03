@@ -115,11 +115,11 @@ export const ViewRefund: React.FC = () => {
               <p className="text-sm mt-1">
                 {refund.status === "completed" && refund.processedAt
                   ? `Processed on ${new Date(
-                      refund.processedAt
-                    ).toLocaleString()}`
+                    refund.processedAt
+                  ).toLocaleString()}`
                   : refund.status === "pending"
-                  ? "Awaiting processing"
-                  : "Refund rejected"}
+                    ? "Awaiting processing"
+                    : "Refund rejected"}
               </p>
             </div>
           </div>
@@ -145,13 +145,13 @@ export const ViewRefund: React.FC = () => {
                 <div>
                   <p className="text-sm text-gray-500">Reference Type</p>
                   <p className="font-semibold text-gray-900">
-                    {refund.reservationId ? "Reservation" : "Event"}
+                    {refund.reservationId ? "Reservation" : "Unknown"}
                   </p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-500">Reference Number</p>
                   <p className="font-semibold text-gray-900">
-                    {refund.reservationId || refund.eventId}
+                    {refund.reservationId || "-"}
                   </p>
                 </div>
                 {linkedInvoice && (
@@ -314,13 +314,12 @@ export const ViewRefund: React.FC = () => {
                   <div>
                     <p className="text-sm text-gray-500">Invoice Status</p>
                     <span
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        linkedInvoice.status === "Paid"
+                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${linkedInvoice.status === "Paid"
                           ? "bg-green-100 text-green-800"
                           : linkedInvoice.status === "Unpaid"
-                          ? "bg-red-100 text-red-800"
-                          : "bg-yellow-100 text-yellow-800"
-                      }`}
+                            ? "bg-red-100 text-red-800"
+                            : "bg-yellow-100 text-yellow-800"
+                        }`}
                     >
                       {linkedInvoice.status}
                     </span>

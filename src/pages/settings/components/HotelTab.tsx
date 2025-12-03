@@ -18,6 +18,21 @@ export const HotelTab: React.FC<HotelTabProps> = ({
     onOpenEdit,
     onDelete,
 }) => {
+    const [currentPage, setCurrentPage] = React.useState(1);
+    const [itemsPerPage, setItemsPerPage] = React.useState(10);
+
+    // Pagination logic
+    const totalPages = Math.ceil(hotels.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginatedHotels = hotels.slice(startIndex, endIndex);
+
+    React.useEffect(() => {
+        if (currentPage > totalPages && totalPages > 0) {
+            setCurrentPage(1);
+        }
+    }, [currentPage, totalPages]);
+
     return (
         <div className="space-y-8">
             <Card
@@ -72,7 +87,7 @@ export const HotelTab: React.FC<HotelTabProps> = ({
                                 </tr>
                             </thead>
                             <tbody className="text-sm text-slate-700">
-                                {hotels.map((hotel) => (
+                                {paginatedHotels.map((hotel) => (
                                     <tr
                                         key={hotel.id}
                                         className="border-t border-slate-100 hover:bg-slate-50/70"
@@ -84,7 +99,7 @@ export const HotelTab: React.FC<HotelTabProps> = ({
                                             {hotel.logoUrl ? (
                                                 <img
                                                     src={hotel.logoUrl}
-                                                    alt={`${hotel.name} logo`}
+                                                    alt={`${hotel.hotelName} logo`}
                                                     className="h-10 w-10 rounded-lg border border-slate-200 object-cover"
                                                 />
                                             ) : (
@@ -131,6 +146,51 @@ export const HotelTab: React.FC<HotelTabProps> = ({
                                 ))}
                             </tbody>
                         </table>
+
+                        {/* Pagination Controls */}
+                        {hotels.length > 0 && (
+                            <div className="mt-4 flex items-center justify-between border-t border-slate-200 pt-4 px-4">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-sm text-slate-600">Items per page:</span>
+                                    <select
+                                        value={itemsPerPage}
+                                        onChange={(e) => {
+                                            setItemsPerPage(Number(e.target.value));
+                                            setCurrentPage(1);
+                                        }}
+                                        className="rounded border border-slate-300 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    >
+                                        <option value={10}>10</option>
+                                        <option value={25}>25</option>
+                                        <option value={50}>50</option>
+                                        <option value={100}>100</option>
+                                    </select>
+                                    <span className="text-sm text-slate-600">
+                                        Showing {startIndex + 1} to {Math.min(endIndex, hotels.length)} of {hotels.length} entries
+                                    </span>
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={() => setCurrentPage(currentPage - 1)}
+                                        disabled={currentPage === 1}
+                                        className="px-3 py-1 text-sm rounded border border-slate-300 bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        Previous
+                                    </button>
+                                    <span className="text-sm text-slate-600">
+                                        Page {currentPage} of {totalPages}
+                                    </span>
+                                    <button
+                                        onClick={() => setCurrentPage(currentPage + 1)}
+                                        disabled={currentPage === totalPages}
+                                        className="px-3 py-1 text-sm rounded border border-slate-300 bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        Next
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
             </Card>

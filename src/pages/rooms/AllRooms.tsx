@@ -55,6 +55,8 @@ export const AllRooms: React.FC = () => {
     maxAdults: undefined as number | undefined,
     maxChildren: undefined as number | undefined,
   });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   // Map room status to display status (cleaned/to-clean -> available)
   const getDisplayStatus = (roomStatus: string): string => {
@@ -97,6 +99,23 @@ export const AllRooms: React.FC = () => {
   // };
 
   // const uniqueCurrencies = getAllCurrencies();
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredRooms.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedRooms = filteredRooms.slice(startIndex, endIndex);
+
+  React.useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(1);
+    }
+  }, [currentPage, totalPages]);
+
+  // Reset to page 1 when filters change
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter, roomTypeFilter, viewTypeFilter]);
 
   const handleEdit = (room: Room) => {
     setEditingRoom(room);
@@ -341,7 +360,7 @@ export const AllRooms: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {filteredRooms.map((room, idx) => {
+                {paginatedRooms.map((room, idx) => {
                   const roomType = state.roomTypes.find(
                     (rt) => rt.id === room.roomTypeId
                   );
@@ -445,6 +464,51 @@ export const AllRooms: React.FC = () => {
             </table>
           </div>
         </div>
+
+        {/* Pagination Controls */}
+        {filteredRooms.length > 0 && (
+          <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-200 pt-4 px-4">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-slate-600">Items per page:</span>
+              <select
+                value={itemsPerPage}
+                onChange={(e) => {
+                  setItemsPerPage(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
+                className="rounded border border-slate-300 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value={10}>10</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+              <span className="text-sm text-slate-600">
+                Showing {startIndex + 1} to {Math.min(endIndex, filteredRooms.length)} of {filteredRooms.length} entries
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setCurrentPage(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="px-3 py-1 text-sm rounded border border-slate-300 bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Previous
+              </button>
+              <span className="text-sm text-slate-600">
+                Page {currentPage} of {totalPages}
+              </span>
+              <button
+                onClick={() => setCurrentPage(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1 text-sm rounded border border-slate-300 bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
 
         {filteredRooms.length === 0 && (
           <div className="text-center py-12">

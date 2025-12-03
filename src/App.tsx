@@ -15,18 +15,8 @@ import { ReservationsHistory } from "./pages/reservations/History";
 // Customers
 import { ManageCustomer } from "./pages/customers/ManageCustomer";
 
-// Events
-import {
-    Events,
-    Packages,
-    Bookings,
-    BookingDetails,
-    CreateBooking,
-} from "./pages/eventManagement";
-
 // Invoicing
 import { Bill } from "./pages/invoicing/Bill";
-import { AdditionalBilling } from "./pages/invoicing/AdditionalBilling";
 import { InvoiceList } from "./pages/invoicing/InvoiceList";
 import { InvoiceView } from "./pages/invoicing/InvoiceView";
 import { CreateInvoice } from "./pages/invoicing/CreateInvoice";
@@ -39,9 +29,6 @@ import { CreateRefund } from "./pages/invoicing/CreateRefund";
 import { CreditNotesList } from "./pages/invoicing/CreditNotesList";
 import { ViewCreditNote } from "./pages/invoicing/ViewCreditNote";
 import { CreateCreditNote } from "./pages/invoicing/CreateCreditNote";
-import { EventInvoicesList } from "./pages/invoicing/EventInvoicesList";
-import { ViewEventInvoice } from "./pages/invoicing/ViewEventInvoice";
-import { CreateEventInvoice } from "./pages/invoicing/CreateEventInvoice";
 
 // Rooms
 import { RoomsOverview } from "./pages/rooms/Overview";
@@ -63,10 +50,6 @@ import { Seasonal } from "./pages/channels/Seasonal";
 import { ChannelPricingGrid } from "./pages/channels/ChannelPricingGrid";
 import { SeasonalType } from "./pages/channels/SeasonalType";
 import { StayTypes } from "./pages/rooms/StayTypes";
-
-// Additional Service
-import ManageServiceItems from "./pages/additionalService/ManageServiceItems";
-import AddonService from "./pages/additionalService/AddonService";
 
 // Other
 import { Tax } from "./pages/tax/Tax";
@@ -126,17 +109,6 @@ function App() {
                                             element={<ReservationsHistory />}
                                         />
                                         <Route path="/customers" element={<ManageCustomer />} />
-                                        <Route path="/events/management" element={<Events />} />
-                                        <Route path="/events/packages" element={<Packages />} />
-                                        <Route path="/events/bookings" element={<Bookings />} />
-                                        <Route
-                                            path="/events/bookings/:id"
-                                            element={<BookingDetails />}
-                                        />
-                                        <Route
-                                            path="/events/create-booking"
-                                            element={<CreateBooking />}
-                                        />
                                         <Route
                                             path="/invoicing/invoices"
                                             element={<InvoiceList />}
@@ -181,22 +153,6 @@ function App() {
                                         <Route
                                             path="/invoicing/credit-notes/:id"
                                             element={<ViewCreditNote />}
-                                        />
-                                        <Route
-                                            path="/invoicing/event-invoices"
-                                            element={<EventInvoicesList />}
-                                        />
-                                        <Route
-                                            path="/invoicing/event-invoices/create"
-                                            element={<CreateEventInvoice />}
-                                        />
-                                        <Route
-                                            path="/invoicing/event-invoices/:id"
-                                            element={<ViewEventInvoice />}
-                                        />
-                                        <Route
-                                            path="/invoicing/additional"
-                                            element={<AdditionalBilling />}
                                         />
                                         <Route path="/invoicing/bill" element={<Bill />} />
                                         <Route path="/rooms/overview" element={<RoomsOverview />} />
@@ -247,18 +203,6 @@ function App() {
                                         <Route
                                             path="/channels/price-grid"
                                             element={<ChannelPricingGrid />}
-                                        />
-                                        <Route
-                                            path="/additional-service/manage-items"
-                                            element={<ManageServiceItems />}
-                                        />
-                                        <Route
-                                            path="/additional-service/reservation-addon"
-                                            element={<AddonService />}
-                                        />
-                                        <Route
-                                            path="/additional-service/event-addon"
-                                            element={<AddonService />}
                                         />
                                         <Route path="/tax" element={<Tax />} />
                                         <Route path="/policies" element={<Policies />} />

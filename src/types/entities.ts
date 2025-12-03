@@ -18,7 +18,7 @@ export type PaymentStatus = "paid" | "unpaid" | "partial";
 export type RefundStatus = "pending" | "completed" | "rejected";
 export type CustomerStatus = "VIP" | "regular customer" | "new customer";
 export type ChannelStatus = "active" | "inactive";
-export type ServiceCategory = "Reservation" | "Event" | "Both";
+export type ServiceCategory = "Reservation" | "Both";
 export type ServiceItemStatus = "Active" | "Inactive";
 export type AddonServiceStatus = "Pending" | "Completed" | "Cancelled";
 
@@ -172,7 +172,6 @@ export interface Refund {
   id: string;
   refundNumber: string;
   reservationId?: string;
-  eventId?: string;
   invoiceId?: string;
   customerId: string;
   customerName: string;
@@ -189,7 +188,7 @@ export interface Refund {
   notes?: string;
 }
 
-export type ReferenceType = "Reservation" | "Event";
+export type ReferenceType = "Reservation";
 
 export interface Invoice {
   id: string;
@@ -434,26 +433,6 @@ export interface User {
   isActive: boolean;
 }
 
-// Event Management types
-export type EventStatus =
-  | "pending"
-  | "confirmed"
-  | "ongoing"
-  | "completed"
-  | "cancelled";
-export type EventType =
-  | "conference"
-  | "wedding"
-  | "seminar"
-  | "corporate"
-  | "birthday"
-  | "anniversary"
-  | "meeting"
-  | "workshop"
-  | "gala"
-  | "other";
-
-export type HallStatus = "available" | "reserved" | "maintenance";
 export type InvoiceType = "proforma" | "final" | "refund";
 export type InvoiceStatus =
   | "draft"
@@ -464,211 +443,11 @@ export type InvoiceStatus =
   | "Paid"
   | "Partially Paid"
   | "Unpaid";
-export type AdditionalServiceCategory =
-  | "catering"
-  | "decoration"
-  | "technical"
-  | "staff"
-  | "equipment"
-  | "transport"
-  | "security"
-  | "other";
 export type IdentificationType =
   | "nic"
   | "passport"
   | "driving_license"
   | "other";
-
-export interface AdditionalService {
-  id: string;
-  name: string;
-  description: string;
-  category: AdditionalServiceCategory;
-  unitPrice: number;
-  unit: string; // e.g., "per hour", "per piece", "per person"
-  isActive: boolean;
-  minQuantity?: number;
-  maxQuantity?: number;
-  createdAt: string;
-  updatedAt?: string;
-}
-
-export interface Hall {
-  id: string;
-  name: string;
-  capacity: number;
-  location: string;
-  facilities: string[]; // Array of facility names
-  availableFacilities: {
-    airConditioning: boolean;
-    projector: boolean;
-    soundSystem: boolean;
-    wifi: boolean;
-    parking: boolean;
-    catering: boolean;
-    stage: boolean;
-    danceFloor: boolean;
-    bar: boolean;
-    kitchen: boolean;
-  };
-  pricePerHour: number;
-  pricePerDay: number;
-  status: HallStatus;
-  description?: string;
-  images?: string[];
-  squareFootage?: number;
-  floorPlan?: string; // URL to floor plan image
-  setupTime: number; // Hours needed for setup
-  cleanupTime: number; // Hours needed for cleanup
-  createdAt: string;
-  updatedAt?: string;
-}
-
-export interface EventPackage {
-  id: string;
-  name: string;
-  description: string;
-  includedServices: string[];
-  basePrice: number;
-  taxRate: number;
-  duration: "half-day" | "full-day" | "hourly";
-  includedHours?: number; // Number of hours included in the package
-  applicableEventTypes: EventType[];
-  isActive: boolean;
-  createdAt: string;
-  updatedAt?: string;
-}
-
-export interface Event {
-  id: string;
-  name: string;
-  type: EventType;
-  organizerName: string;
-  organizerEmail?: string;
-  organizerPhone?: string;
-  // Customer identification
-  identificationType: IdentificationType;
-  identificationNumber: string; // NIC, Passport, etc.
-  organizerAddress?: string;
-  emergencyContact?: {
-    name: string;
-    phone: string;
-    relationship: string;
-  };
-  startDateTime: string;
-  endDateTime: string;
-  expectedAttendees: number;
-  actualAttendees?: number;
-  // Multiple halls support
-  hallIds: string[]; // Array of hall IDs
-  packageId?: string;
-  additionalServices?: {
-    serviceId: string;
-    quantity: number;
-    unitPrice: number;
-    totalPrice: number;
-  }[];
-  customPricing?: number;
-  totalRevenue: number;
-  status: EventStatus;
-  notes?: string;
-  requirements?: string;
-  decorationType?: string;
-  cateringRequirements?: string;
-  equipmentNeeds?: string[];
-  specialRequests?: string;
-  paymentStatus: "pending" | "partial" | "paid" | "overdue";
-  advancePayment?: number;
-  balanceAmount?: number;
-  createdAt: string;
-  updatedAt?: string;
-  createdBy: string; // User ID
-}
-
-export interface EventInvoice {
-  id: string;
-  invoiceNumber: string;
-  eventId: string;
-  eventReferenceNo: string;
-  eventName: string;
-  eventType: string;
-  organizerName: string;
-  customerId: string;
-  customerName: string;
-  customerNIC?: string;
-  customerPassport?: string;
-  customerCompanyRegNo?: string;
-  eventStartDateTime: string;
-  eventEndDateTime: string;
-  hallName: string;
-  attendees: number;
-  packageName: string;
-  packageBasePrice: number;
-  packageTaxRate: number;
-  includedServices: string[];
-  addOnServices: Array<{
-    id: string;
-    name: string;
-    quantity: number;
-    unitPrice: number;
-    totalPrice: number;
-  }>;
-  decorationType?: string;
-  cateringRequirements?: string;
-  customRequirements?: string;
-  standardHours: number;
-  totalHours: number;
-  extraHours: number;
-  overtimeRate: number;
-  overtimeCharges: number;
-  subtotal: number;
-  taxAmount: number;
-  discountAmount: number;
-  totalAmount: number;
-  status: InvoiceStatus;
-  paidAmount?: number;
-  staffResponsible: string;
-  dateIssued: string;
-  dueDate: string;
-  paidDate?: string;
-  notes?: string;
-  createdAt: string;
-}
-
-export interface EventBooking {
-  id: string;
-  eventId: string;
-  customerId?: string;
-  organizerName: string;
-  organizerEmail: string;
-  organizerPhone: string;
-  bookingDate: string;
-  confirmationNumber: string;
-  bookingStatus: "pending" | "confirmed" | "cancelled" | "completed";
-  depositAmount: number;
-  totalAmount: number;
-  specialRequests?: string;
-  termsAccepted: boolean;
-  bookingStage?:
-  | "initiated"
-  | "validated"
-  | "quoted"
-  | "confirmed"
-  | "completed";
-  quotationId?: string;
-  invoiceId?: string;
-  paymentStatus?: PaymentStatus;
-  createdAt: string;
-  updatedAt?: string;
-}
-
-export interface HallAvailability {
-  hallId: string;
-  startDateTime: string;
-  endDateTime: string;
-  isAvailable: boolean;
-  eventId?: string;
-}
 
 export interface HotelState {
   customers: Customer[];
@@ -693,12 +472,6 @@ export interface HotelState {
   housekeeping: HousekeepingRoom[];
   settings: HotelSettings | null;
   users: User[];
-  events: Event[];
-  eventPackages: EventPackage[];
-  additionalServices: AdditionalService[];
-  halls: Hall[];
-  eventInvoices: EventInvoice[];
-  eventBookings: EventBooking[];
 }
 
 export interface ServiceItemMaster {
@@ -755,35 +528,4 @@ export interface ReservationServiceAddon {
   deletedBy?: string;
 }
 
-export interface EventServiceAddon {
-  id: string;
-  eventBookingId: string;
-  eventBookingNo: string;
-  eventName: string;
-  eventType: string;
-  organizerName: string;
-  venue: string;
-  eventDate: string;
-  eventTime: string;
-  serviceId: string;
-  serviceName: string;
-  quantity: number;
-  unitType: string;
-  unitPrice: number;
-  totalPrice: number;
-  serviceDate: string;
-  serviceTime?: string;
-  billingMethod: "Cash" | "Event Invoice" | "Reference No.";
-  referenceNo?: string;
-  notes?: string;
-  status: AddonServiceStatus;
-  isInvoiced: boolean;
-  invoiceId?: string;
-  invoiceNo?: string;
-  createdAt: string;
-  createdBy: string;
-  updatedAt?: string;
-  updatedBy?: string;
-  deletedAt?: string;
-  deletedBy?: string;
-}
+

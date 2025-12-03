@@ -30,11 +30,7 @@ export const CreateRefund: React.FC = () => {
 
   // Get available invoices based on reference
   const availableInvoices = invoices.filter((inv) => {
-    if (referenceType === "Reservation") {
-      return inv.reservationId === referenceNo;
-    } else {
-      return inv.eventId === referenceNo;
-    }
+    return inv.reservationId === referenceNo;
   });
 
   // Get customer info from selected invoice
@@ -118,8 +114,7 @@ export const CreateRefund: React.FC = () => {
     const refund: Refund = {
       id: `rf${Date.now()}`,
       refundNumber: `RF${1000 + Math.floor(Math.random() * 9000)}`,
-      reservationId: referenceType === "Reservation" ? referenceNo : undefined,
-      eventId: referenceType === "Event" ? referenceNo : undefined,
+      reservationId: referenceNo,
       invoiceId: selectedInvoice.id,
       customerId: customerInfo.id,
       customerName: customerInfo.name,
@@ -195,7 +190,6 @@ export const CreateRefund: React.FC = () => {
                   }}
                   options={[
                     { value: "Reservation", label: "Reservation" },
-                    { value: "Event", label: "Event" },
                   ]}
                 />
 
@@ -226,11 +220,9 @@ export const CreateRefund: React.FC = () => {
                       { value: "", label: "Select an invoice" },
                       ...availableInvoices.map((inv) => ({
                         value: inv.id,
-                        label: `${
-                          inv.invoiceId
-                        } - LKR ${inv.chargeBreakdown.grandTotal.toLocaleString()} - ${
-                          inv.status
-                        }`,
+                        label: `${inv.invoiceId
+                          } - LKR ${inv.chargeBreakdown.grandTotal.toLocaleString()} - ${inv.status
+                          }`,
                       })),
                     ]}
                     error={errors.invoice}

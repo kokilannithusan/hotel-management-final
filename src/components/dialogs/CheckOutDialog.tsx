@@ -285,7 +285,7 @@ export function CheckOutDialog({
 
   // Step 1: Stay Summary
   if (step === "summary") {
-    const pendingCharges = 0; // TODO: Calculate from additional services
+    const pendingCharges = 0; // TODO: Calculate pending charges
 
     return (
       <div className="space-y-6">
@@ -535,9 +535,8 @@ export function CheckOutDialog({
           </h2>
           <p className="text-sm text-slate-500">
             {isChangeStayTypeMode
-              ? `Select a different stay type for Room ${
-                  currentRoom?.roomNumber || "your room"
-                }`
+              ? `Select a different stay type for Room ${currentRoom?.roomNumber || "your room"
+              }`
               : "Select a new room and preferences for your extended stay"}
           </p>
         </div>
@@ -691,19 +690,17 @@ export function CheckOutDialog({
                         setChildren(combo.children);
                         setStep("confirm-extension");
                       }}
-                      className={`relative border-2 rounded-xl p-5 cursor-pointer transition-all duration-200 ease-out hover:scale-[1.02] active:scale-[0.98] min-h-[200px] flex flex-col ${
-                        isSelected
+                      className={`relative border-2 rounded-xl p-5 cursor-pointer transition-all duration-200 ease-out hover:scale-[1.02] active:scale-[0.98] min-h-[200px] flex flex-col ${isSelected
                           ? "border-blue-500 bg-blue-50 shadow-lg"
                           : "border-slate-200 bg-white hover:border-blue-400 hover:shadow-md"
-                      }`}
+                        }`}
                     >
                       {/* Capacity Badge */}
                       <div className="absolute top-3 right-3">
                         <span className="px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap bg-purple-600 text-white">
                           {combo.adults} Adult{combo.adults !== 1 ? "s" : ""}
                           {combo.children > 0 &&
-                            ` + ${combo.children} Child${
-                              combo.children !== 1 ? "ren" : ""
+                            ` + ${combo.children} Child${combo.children !== 1 ? "ren" : ""
                             }`}
                         </span>
                       </div>
@@ -823,22 +820,20 @@ export function CheckOutDialog({
                       setSelectedRoomId(room.id);
                       setStep("confirm-extension");
                     }}
-                    className={`relative border-2 rounded-xl p-5 cursor-pointer transition-all duration-200 ease-out hover:scale-[1.02] active:scale-[0.98] min-h-[200px] flex flex-col ${
-                      isSelected
+                    className={`relative border-2 rounded-xl p-5 cursor-pointer transition-all duration-200 ease-out hover:scale-[1.02] active:scale-[0.98] min-h-[200px] flex flex-col ${isSelected
                         ? "border-blue-500 bg-blue-50 shadow-lg"
                         : isCurrent
-                        ? "border-blue-300 bg-blue-50"
-                        : "border-slate-200 bg-white hover:border-blue-400 hover:shadow-md"
-                    }`}
+                          ? "border-blue-300 bg-blue-50"
+                          : "border-slate-200 bg-white hover:border-blue-400 hover:shadow-md"
+                      }`}
                   >
                     {/* Status Badge */}
                     <div className="absolute top-3 right-3">
                       <span
-                        className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap ${
-                          isCurrent
+                        className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap ${isCurrent
                             ? "bg-blue-600 text-white"
                             : "bg-green-600 text-white"
-                        }`}
+                          }`}
                       >
                         {isCurrent ? "Same Room" : "Available"}
                       </span>

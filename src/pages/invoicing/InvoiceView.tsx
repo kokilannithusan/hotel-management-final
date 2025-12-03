@@ -209,7 +209,7 @@ export const InvoiceView: React.FC = () => {
             </div>
           </Card>
 
-          {/* Reservation/Event Information */}
+          {/* Reservation Information */}
           {invoice.referenceType === "Reservation" && invoice.reservation && (
             <Card>
               <div className="p-6">
@@ -268,68 +268,6 @@ export const InvoiceView: React.FC = () => {
                     />
                   </div>
                 )}
-              </div>
-            </Card>
-          )}
-
-          {invoice.referenceType === "Event" && invoice.event && (
-            <Card>
-              <div className="p-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">
-                  Event Details
-                </h2>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-gray-500">Hall Name</p>
-                    <p className="font-semibold text-gray-900">
-                      {invoice.event.hallName}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Event Type</p>
-                    <p className="font-semibold text-gray-900">
-                      {invoice.event.eventType}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Hall Rate</p>
-                    <p className="font-semibold text-gray-900">
-                      LKR {invoice.event.hallRate.toLocaleString()}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Duration</p>
-                    <p className="font-semibold text-gray-900">
-                      {invoice.event.duration} hours
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Start Date & Time</p>
-                    <p className="font-semibold text-gray-900">
-                      {invoice.event.startDateTime}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">End Date & Time</p>
-                    <p className="font-semibold text-gray-900">
-                      {invoice.event.endDateTime}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Attendees</p>
-                    <p className="font-semibold text-gray-900">
-                      {invoice.event.attendees}
-                    </p>
-                  </div>
-                  {invoice.event.packageName && (
-                    <div>
-                      <p className="text-sm text-gray-500">Package</p>
-                      <p className="font-semibold text-gray-900">
-                        {invoice.event.packageName}
-                      </p>
-                    </div>
-                  )}
-                </div>
               </div>
             </Card>
           )}

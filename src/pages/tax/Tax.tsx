@@ -21,6 +21,8 @@ export const Tax: React.FC = () => {
     appliesTo: 'both' as 'room' | 'invoice' | 'both',
     isActive: true,
   });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const handleEdit = (tax: TaxEntity) => {
     setEditingTax(tax);
@@ -64,6 +66,18 @@ export const Tax: React.FC = () => {
     }
   };
 
+  // Pagination logic
+  const totalPages = Math.ceil(state.taxes.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedTaxes = state.taxes.slice(startIndex, endIndex);
+
+  React.useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(1);
+    }
+  }, [currentPage, totalPages]);
+
   const columns = [
     { key: 'name', header: 'Name' },
     {
@@ -82,9 +96,8 @@ export const Tax: React.FC = () => {
       header: 'Status',
       render: (tax: TaxEntity) => (
         <span
-          className={`px-2 py-1 text-xs font-semibold rounded-full ${
-            tax.isActive ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-800'
-          }`}
+          className={`px-2 py-1 text-xs font-semibold rounded-full ${tax.isActive ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-800'
+            }`}
         >
           {tax.isActive ? 'Active' : 'Inactive'}
         </span>
@@ -120,7 +133,52 @@ export const Tax: React.FC = () => {
         </Button>
       </div>
       <Card>
-        <Table columns={columns} data={state.taxes} />
+        <Table columns={columns} data={paginatedTaxes} />
+
+        {/* Pagination Controls */}
+        {state.taxes.length > 0 && (
+          <div className="mt-4 flex items-center justify-between border-t border-slate-200 pt-4">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-slate-600">Items per page:</span>
+              <select
+                value={itemsPerPage}
+                onChange={(e) => {
+                  setItemsPerPage(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
+                className="rounded border border-slate-300 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value={10}>10</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+              <span className="text-sm text-slate-600">
+                Showing {startIndex + 1} to {Math.min(endIndex, state.taxes.length)} of {state.taxes.length} entries
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setCurrentPage(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="px-3 py-1 text-sm rounded border border-slate-300 bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Previous
+              </button>
+              <span className="text-sm text-slate-600">
+                Page {currentPage} of {totalPages}
+              </span>
+              <button
+                onClick={() => setCurrentPage(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1 text-sm rounded border border-slate-300 bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
       </Card>
 
       <Modal

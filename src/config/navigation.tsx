@@ -15,9 +15,6 @@ import {
   FileCheck,
   Coins,
   Clock,
-  PartyPopper,
-  Plus,
-  Package,
   Mail,
 } from "lucide-react";
 
@@ -57,33 +54,6 @@ export const navItems: NavItem[] = [
     icon: <Users className="w-5 h-5" />,
   },
   {
-    path: "/events",
-    label: "Event Management",
-    icon: <PartyPopper className="w-5 h-5" />,
-    children: [
-      {
-        path: "/events",
-        label: "Events",
-        icon: <Calendar className="w-4 h-4" />,
-      },
-      {
-        path: "/events/packages",
-        label: "Packages",
-        icon: <Package className="w-4 h-4" />,
-      },
-      {
-        path: "/events/bookings",
-        label: "Bookings",
-        icon: <ClipboardList className="w-4 h-4" />,
-      },
-      {
-        path: "/events/create-booking",
-        label: "Create Booking",
-        icon: <Plus className="w-4 h-4" />,
-      },
-    ],
-  },
-  {
     path: "/invoicing",
     label: "Invoicing",
     icon: <DollarSign className="w-5 h-5" />,
@@ -102,11 +72,6 @@ export const navItems: NavItem[] = [
         path: "/invoicing/refunds",
         label: "Refunds",
         icon: <FileCheck className="w-4 h-4" />,
-      },
-      {
-        path: "/invoicing/additional",
-        label: "Additional Billing",
-        icon: <DollarSign className="w-4 h-4" />,
       },
     ],
   },
@@ -198,23 +163,6 @@ export const navItems: NavItem[] = [
         path: "/channels/price-grid",
         label: "Channel Price",
         icon: <DollarSign className="w-4 h-4" />,
-      },
-    ],
-  },
-  {
-    path: "/additional-service",
-    label: "Additional Service",
-    icon: <Package className="w-5 h-5" />,
-    children: [
-      {
-        path: "/additional-service/manage-items",
-        label: "Manage Service Items",
-        icon: <Package className="w-4 h-4" />,
-      },
-      {
-        path: "/additional-service/reservation-addon",
-        label: "Add-on Service",
-        icon: <Calendar className="w-4 h-4" />,
       },
     ],
   },

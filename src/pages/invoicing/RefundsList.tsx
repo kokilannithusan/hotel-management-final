@@ -24,16 +24,13 @@ export const RefundsNew: React.FC = () => {
       (refund.reservationId &&
         refund.reservationId
           .toLowerCase()
-          .includes(searchTerm.toLowerCase())) ||
-      (refund.eventId &&
-        refund.eventId.toLowerCase().includes(searchTerm.toLowerCase()));
+          .includes(searchTerm.toLowerCase()));
 
     const matchesStatus = !statusFilter || refund.status === statusFilter;
 
     const matchesType =
       !referenceTypeFilter ||
-      (referenceTypeFilter === "Reservation" && refund.reservationId) ||
-      (referenceTypeFilter === "Event" && refund.eventId);
+      (referenceTypeFilter === "Reservation" && refund.reservationId);
 
     return matchesSearch && matchesStatus && matchesType;
   });
@@ -65,7 +62,7 @@ export const RefundsNew: React.FC = () => {
     <div className="p-6">
       <PageHeader
         title="Refunds Management"
-        description="Manage refunds for reservations and events"
+        description="Manage refunds for reservations"
         actions={
           <Button onClick={() => navigate("/invoicing/refunds/create")}>
             <Plus className="w-4 h-4 mr-2" />
@@ -105,7 +102,6 @@ export const RefundsNew: React.FC = () => {
             options={[
               { value: "", label: "All Types" },
               { value: "Reservation", label: "Reservation" },
-              { value: "Event", label: "Event" },
             ]}
           />
         </div>
@@ -172,13 +168,13 @@ export const RefundsNew: React.FC = () => {
                       <td className="px-3 py-3 text-sm">
                         <div className="flex flex-col gap-1">
                           <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 w-fit">
-                            {refund.reservationId ? "Reservation" : "Event"}
+                            {refund.reservationId ? "Reservation" : "Unknown"}
                           </span>
                           <p
                             className="text-gray-900 text-xs truncate max-w-[120px]"
-                            title={refund.reservationId || refund.eventId}
+                            title={refund.reservationId || ""}
                           >
-                            {refund.reservationId || refund.eventId}
+                            {refund.reservationId || "-"}
                           </p>
                         </div>
                       </td>

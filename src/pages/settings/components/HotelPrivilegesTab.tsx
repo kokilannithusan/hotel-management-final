@@ -23,6 +23,21 @@ export const HotelPrivilegesTab: React.FC<HotelPrivilegesTabProps> = ({
     onTogglePrivilege,
     onSave,
 }) => {
+    const [currentPage, setCurrentPage] = React.useState(1);
+    const [itemsPerPage, setItemsPerPage] = React.useState(10);
+
+    const filteredOperations = operationMatrix.filter((operation) => operation.depth > 0);
+    const totalPages = Math.ceil(filteredOperations.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginatedOperations = filteredOperations.slice(startIndex, endIndex);
+
+    React.useEffect(() => {
+        if (currentPage > totalPages && totalPages > 0) {
+            setCurrentPage(1);
+        }
+    }, [currentPage, totalPages]);
+
     return (
         <Card title="Page Privileges">
             <div className="space-y-6">
@@ -36,7 +51,7 @@ export const HotelPrivilegesTab: React.FC<HotelPrivilegesTabProps> = ({
                                 { value: "", label: "Select a hotel" },
                                 ...hotels.map((hotel) => ({
                                     value: hotel.id,
-                                    label: hotel.name,
+                                    label: hotel.hotelName,
                                 })),
                             ]}
                         />
@@ -70,8 +85,7 @@ export const HotelPrivilegesTab: React.FC<HotelPrivilegesTabProps> = ({
                                             </tr>
                                         </thead>
                                         <tbody className="text-sm text-slate-700">
-                                            {operationMatrix
-                                                .filter((operation) => operation.depth > 0) // Only show submodules
+                                            {paginatedOperations
                                                 .map((operation) => {
                                                     // Find parent module label
                                                     const parentModule = operationMatrix.find(
@@ -127,6 +141,50 @@ export const HotelPrivilegesTab: React.FC<HotelPrivilegesTabProps> = ({
                                                 })}
                                         </tbody>
                                     </table>
+
+                                    {filteredOperations.length > 0 && (
+                                        <div className="mt-4 flex items-center justify-between border-t border-slate-200 pt-4 px-4">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-sm text-slate-600">Items per page:</span>
+                                                <select
+                                                    value={itemsPerPage}
+                                                    onChange={(e) => {
+                                                        setItemsPerPage(Number(e.target.value));
+                                                        setCurrentPage(1);
+                                                    }}
+                                                    className="rounded border border-slate-300 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                >
+                                                    <option value={10}>10</option>
+                                                    <option value={25}>25</option>
+                                                    <option value={50}>50</option>
+                                                    <option value={100}>100</option>
+                                                </select>
+                                                <span className="text-sm text-slate-600">
+                                                    Showing {startIndex + 1} to {Math.min(endIndex, filteredOperations.length)} of {filteredOperations.length} entries
+                                                </span>
+                                            </div>
+
+                                            <div className="flex items-center gap-2">
+                                                <button
+                                                    onClick={() => setCurrentPage(currentPage - 1)}
+                                                    disabled={currentPage === 1}
+                                                    className="px-3 py-1 text-sm rounded border border-slate-300 bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                >
+                                                    Previous
+                                                </button>
+                                                <span className="text-sm text-slate-600">
+                                                    Page {currentPage} of {totalPages}
+                                                </span>
+                                                <button
+                                                    onClick={() => setCurrentPage(currentPage + 1)}
+                                                    disabled={currentPage === totalPages}
+                                                    className="px-3 py-1 text-sm rounded border border-slate-300 bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                >
+                                                    Next
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>

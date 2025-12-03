@@ -162,7 +162,6 @@ export const CreditNotesList: React.FC = () => {
             >
               <option value="">All Reference Types</option>
               <option value="Reservation">Reservation</option>
-              <option value="Event">Event</option>
             </select>
           </div>
         </div>

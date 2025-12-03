@@ -24,12 +24,8 @@ export const storageKeys = {
   housekeeping: `${STORAGE_PREFIX}housekeeping`,
   settings: `${STORAGE_PREFIX}settings`,
   users: `${STORAGE_PREFIX}users`,
-  events: `${STORAGE_PREFIX}events`,
-  eventPackages: `${STORAGE_PREFIX}event_packages`,
-  additionalServices: `${STORAGE_PREFIX}additional_services`,
-  halls: `${STORAGE_PREFIX}halls`,
-  eventInvoices: `${STORAGE_PREFIX}event_invoices`,
-  eventBookings: `${STORAGE_PREFIX}event_bookings`,
+
+
 };
 
 export const getStorageItem = <T>(key: string, defaultValue: T): T => {

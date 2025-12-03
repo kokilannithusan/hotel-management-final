@@ -57,6 +57,8 @@ export const StayTypes: React.FC = () => {
     string | null
   >(null);
   const [isPricingEditMode, setIsPricingEditMode] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   // Save to localStorage whenever combinations change
   useEffect(() => {
@@ -153,14 +155,14 @@ export const StayTypes: React.FC = () => {
       s.map((c) =>
         c.id === editingId
           ? {
-              ...c,
-              roomTypeId: comboForm.roomTypeId as string,
-              adults: comboForm.adults ?? 1,
-              children: comboForm.children ?? 0,
-              mealPlanId: comboForm.mealPlanId as string,
-              viewTypeId: comboForm.viewTypeId as string,
-              pricing: validPricing,
-            }
+            ...c,
+            roomTypeId: comboForm.roomTypeId as string,
+            adults: comboForm.adults ?? 1,
+            children: comboForm.children ?? 0,
+            mealPlanId: comboForm.mealPlanId as string,
+            viewTypeId: comboForm.viewTypeId as string,
+            pricing: validPricing,
+          }
           : c
       )
     );
@@ -196,6 +198,18 @@ export const StayTypes: React.FC = () => {
   // };
 
   // const uniqueCurrencies = getAllCurrencies();
+
+  // Pagination logic
+  const totalPages = Math.ceil(combinations.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedCombinations = combinations.slice(startIndex, endIndex);
+
+  React.useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(1);
+    }
+  }, [currentPage, totalPages]);
 
   return (
     <div className="space-y-6">
@@ -265,12 +279,11 @@ export const StayTypes: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {combinations.map((combo, idx) => (
+                {paginatedCombinations.map((combo, idx) => (
                   <tr
                     key={combo.id}
-                    className={`border-b border-slate-200 hover:bg-slate-50 transition-colors ${
-                      idx % 2 === 0 ? "bg-white" : "bg-slate-50"
-                    }`}
+                    className={`border-b border-slate-200 hover:bg-slate-50 transition-colors ${idx % 2 === 0 ? "bg-white" : "bg-slate-50"
+                      }`}
                   >
                     <td className="px-4 py-3 text-slate-700">
                       {state.roomTypes.find((rt) => rt.id === combo.roomTypeId)
@@ -290,8 +303,8 @@ export const StayTypes: React.FC = () => {
                     </td>
                     <td className="px-4 py-3 text-slate-700">
                       {combo.pricing &&
-                      Array.isArray(combo.pricing) &&
-                      combo.pricing.length > 0 ? (
+                        Array.isArray(combo.pricing) &&
+                        combo.pricing.length > 0 ? (
                         combo.pricing.length === 1 ? (
                           <span className="font-semibold">
                             {combo.pricing[0].currency}{" "}
@@ -337,6 +350,51 @@ export const StayTypes: React.FC = () => {
                 ))}
               </tbody>
             </table>
+
+            {/* Pagination Controls */}
+            {combinations.length > 0 && (
+              <div className="mt-4 flex items-center justify-between border-t border-slate-200 pt-4 px-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-slate-600">Items per page:</span>
+                  <select
+                    value={itemsPerPage}
+                    onChange={(e) => {
+                      setItemsPerPage(Number(e.target.value));
+                      setCurrentPage(1);
+                    }}
+                    className="rounded border border-slate-300 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value={10}>10</option>
+                    <option value={25}>25</option>
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                  </select>
+                  <span className="text-sm text-slate-600">
+                    Showing {startIndex + 1} to {Math.min(endIndex, combinations.length)} of {combinations.length} entries
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setCurrentPage(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="px-3 py-1 text-sm rounded border border-slate-300 bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Previous
+                  </button>
+                  <span className="text-sm text-slate-600">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <button
+                    onClick={() => setCurrentPage(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="px-3 py-1 text-sm rounded border border-slate-300 bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </Card>
@@ -618,9 +676,8 @@ export const StayTypes: React.FC = () => {
                     {selectedPricing.map((entry, idx) => (
                       <tr
                         key={idx}
-                        className={`border-b border-slate-200 ${
-                          idx % 2 === 0 ? "bg-white" : "bg-slate-50"
-                        }`}
+                        className={`border-b border-slate-200 ${idx % 2 === 0 ? "bg-white" : "bg-slate-50"
+                          }`}
                       >
                         <td className="px-4 py-3 text-slate-700 font-medium">
                           {entry.currency}

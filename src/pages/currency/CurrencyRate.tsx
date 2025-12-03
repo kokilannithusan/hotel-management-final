@@ -17,6 +17,8 @@ export const CurrencyRate: React.FC = () => {
   const [toCurrency, setToCurrency] = useState<string>("");
   const [convertedAmount, setConvertedAmount] = useState<number>(0);
   const [isConverterExpanded, setIsConverterExpanded] = useState<boolean>(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   // Initialize default currencies when rates are available (USD to LKR)
   useEffect(() => {
@@ -113,6 +115,18 @@ export const CurrencyRate: React.FC = () => {
     });
     alert("Currency rates updated!");
   };
+
+  // Pagination logic for Exchange Rates table
+  const totalPages = Math.ceil(state.currencyRates.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedCurrencyRates = state.currencyRates.slice(startIndex, endIndex);
+
+  React.useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(1);
+    }
+  }, [currentPage, totalPages]);
 
   const columns = [
     { key: "currency", header: "Currency" },
@@ -222,9 +236,8 @@ export const CurrencyRate: React.FC = () => {
               className="text-slate-500 hover:text-slate-700 transition"
             >
               <svg
-                className={`w-5 h-5 transition-transform ${
-                  isConverterExpanded ? "rotate-180" : ""
-                }`}
+                className={`w-5 h-5 transition-transform ${isConverterExpanded ? "rotate-180" : ""
+                  }`}
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -427,7 +440,52 @@ export const CurrencyRate: React.FC = () => {
         <h2 className="text-lg font-bold text-slate-900 mb-4">
           Exchange Rates
         </h2>
-        <Table columns={columns} data={state.currencyRates} />
+        <Table columns={columns} data={paginatedCurrencyRates} />
+
+        {/* Pagination Controls */}
+        {state.currencyRates.length > 0 && (
+          <div className="mt-4 flex items-center justify-between border-t border-slate-200 pt-4">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-slate-600">Items per page:</span>
+              <select
+                value={itemsPerPage}
+                onChange={(e) => {
+                  setItemsPerPage(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
+                className="rounded border border-slate-300 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value={10}>10</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+              <span className="text-sm text-slate-600">
+                Showing {startIndex + 1} to {Math.min(endIndex, state.currencyRates.length)} of {state.currencyRates.length} entries
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setCurrentPage(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="px-3 py-1 text-sm rounded border border-slate-300 bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Previous
+              </button>
+              <span className="text-sm text-slate-600">
+                Page {currentPage} of {totalPages}
+              </span>
+              <button
+                onClick={() => setCurrentPage(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1 text-sm rounded border border-slate-300 bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
       </Card>
     </div>
   );

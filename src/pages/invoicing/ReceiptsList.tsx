@@ -107,7 +107,6 @@ export const ReceiptsList: React.FC = () => {
             options={[
               { value: "", label: "All Reference Types" },
               { value: "Reservation", label: "Reservation" },
-              { value: "Event", label: "Event" },
             ]}
           />
         </div>

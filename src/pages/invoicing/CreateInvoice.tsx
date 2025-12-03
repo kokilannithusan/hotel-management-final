@@ -16,10 +16,8 @@ export const CreateInvoice: React.FC = () => {
   const {
     customers,
     reservations,
-    events,
     rooms,
     roomTypes,
-    halls,
     mealPlans,
   } = state;
 
@@ -36,7 +34,6 @@ export const CreateInvoice: React.FC = () => {
   const selectedReservation = reservations.find(
     (r) => r.id === selectedReferenceId
   );
-  const selectedEvent = events.find((e) => e.id === selectedReferenceId);
 
   const room = selectedReservation
     ? rooms.find((r) => r.id === selectedReservation.roomId)
@@ -44,11 +41,6 @@ export const CreateInvoice: React.FC = () => {
   const roomType = room
     ? roomTypes.find((rt) => rt.id === room.roomTypeId)
     : null;
-
-  const hall =
-    selectedEvent && selectedEvent.hallIds.length > 0
-      ? halls.find((h) => h.id === selectedEvent.hallIds[0])
-      : null;
 
   const mealPlan = selectedReservation?.mealPlanId
     ? mealPlans.find((mp) => mp.id === selectedReservation.mealPlanId)
@@ -94,7 +86,6 @@ export const CreateInvoice: React.FC = () => {
 
   const calculateCharges = () => {
     let roomCharges = 0;
-    let eventCharges = 0;
     let mealPlanTotal = 0;
 
     if (referenceType === "Reservation" && selectedReservation && roomType) {
@@ -113,23 +104,18 @@ export const CreateInvoice: React.FC = () => {
       }
     }
 
-    if (referenceType === "Event" && selectedEvent && hall) {
-      eventCharges = hall.pricePerDay;
-    }
-
     const serviceTotal = services.reduce((sum, s) => sum + s.amount, 0);
     const extraCharges = additionalCharges.reduce(
       (sum, c) => sum + c.amount,
       0
     );
     const subTotal =
-      roomCharges + eventCharges + mealPlanTotal + serviceTotal + extraCharges;
+      roomCharges + mealPlanTotal + serviceTotal + extraCharges;
     const taxAmount = subTotal * (taxRate / 100);
     const grandTotal = subTotal + taxAmount - discount;
 
     return {
       roomCharges: roomCharges || undefined,
-      eventCharges: eventCharges || undefined,
       mealPlanTotal: mealPlanTotal || undefined,
       serviceTotal,
       extraCharges,
@@ -155,9 +141,7 @@ export const CreateInvoice: React.FC = () => {
       id: `inv${Date.now()}`,
       invoiceId: `INV${1000 + Math.floor(Math.random() * 9000)}`,
       referenceType,
-      reservationId:
-        referenceType === "Reservation" ? selectedReferenceId : undefined,
-      eventId: referenceType === "Event" ? selectedReferenceId : undefined,
+      reservationId: selectedReferenceId,
       guest: {
         id: selectedCustomer.id,
         name: selectedCustomer.name,
@@ -166,60 +150,41 @@ export const CreateInvoice: React.FC = () => {
         nic: selectedCustomer.identificationNumber,
         reference: {
           type: referenceType,
-          refNo:
-            referenceType === "Reservation"
-              ? selectedReservation?.id || ""
-              : selectedEvent?.id || "",
+          refNo: selectedReservation?.id || "",
         },
       },
       reservation:
         referenceType === "Reservation" &&
-        selectedReservation &&
-        roomType &&
-        room
+          selectedReservation &&
+          roomType &&
+          room
           ? {
-              roomNo: room.roomNumber,
-              type: roomType.name,
-              rate: roomType.basePrice,
-              checkIn: selectedReservation.checkIn,
-              checkOut: selectedReservation.checkOut,
-              nights: Math.ceil(
-                (new Date(selectedReservation.checkOut).getTime() -
-                  new Date(selectedReservation.checkIn).getTime()) /
-                  (1000 * 3600 * 24)
-              ),
-              mealPlan: mealPlan
-                ? {
-                    type: mealPlan.name,
-                    pricePerDay: mealPlan.perPersonRate,
-                    totalPrice:
-                      mealPlan.perPersonRate *
-                      (selectedReservation.adults +
-                        selectedReservation.children) *
-                      Math.ceil(
-                        (new Date(selectedReservation.checkOut).getTime() -
-                          new Date(selectedReservation.checkIn).getTime()) /
-                          (1000 * 3600 * 24)
-                      ),
-                  }
-                : { type: "None", pricePerDay: 0, totalPrice: 0 },
-            }
-          : undefined,
-      event:
-        referenceType === "Event" && selectedEvent && hall
-          ? {
-              hallName: hall.name,
-              eventType: selectedEvent.type,
-              startDateTime: selectedEvent.startDateTime,
-              endDateTime: selectedEvent.endDateTime,
-              duration: Math.ceil(
-                (new Date(selectedEvent.endDateTime).getTime() -
-                  new Date(selectedEvent.startDateTime).getTime()) /
-                  (1000 * 3600)
-              ),
-              hallRate: hall.pricePerDay,
-              attendees: selectedEvent.expectedAttendees,
-            }
+            roomNo: room.roomNumber,
+            type: roomType.name,
+            rate: roomType.basePrice,
+            checkIn: selectedReservation.checkIn,
+            checkOut: selectedReservation.checkOut,
+            nights: Math.ceil(
+              (new Date(selectedReservation.checkOut).getTime() -
+                new Date(selectedReservation.checkIn).getTime()) /
+              (1000 * 3600 * 24)
+            ),
+            mealPlan: mealPlan
+              ? {
+                type: mealPlan.name,
+                pricePerDay: mealPlan.perPersonRate,
+                totalPrice:
+                  mealPlan.perPersonRate *
+                  (selectedReservation.adults +
+                    selectedReservation.children) *
+                  Math.ceil(
+                    (new Date(selectedReservation.checkOut).getTime() -
+                      new Date(selectedReservation.checkIn).getTime()) /
+                    (1000 * 3600 * 24)
+                  ),
+              }
+              : { type: "None", pricePerDay: 0, totalPrice: 0 },
+          }
           : undefined,
       services,
       additionalCharges,
@@ -266,7 +231,6 @@ export const CreateInvoice: React.FC = () => {
                 }
                 options={[
                   { value: "Reservation", label: "Reservation" },
-                  { value: "Event", label: "Event" },
                 ]}
               />
             </div>
@@ -311,120 +275,56 @@ export const CreateInvoice: React.FC = () => {
           <Card>
             <div className="p-6">
               <h2 className="text-xl font-bold text-gray-900 mb-4">
-                {referenceType === "Reservation" ? "Reservation" : "Event"}{" "}
-                Details
+                Reservation Details
               </h2>
-              {referenceType === "Reservation" ? (
-                <>
-                  <Select
-                    label="Select Reservation"
-                    value={selectedReferenceId}
-                    onChange={(e) => setSelectedReferenceId(e.target.value)}
-                    options={[
-                      { value: "", label: "Select a reservation" },
-                      ...reservations.map((r) => ({
-                        value: r.id,
-                        label: `${r.id} - ${new Date(
-                          r.checkIn
-                        ).toLocaleDateString()} to ${new Date(
-                          r.checkOut
-                        ).toLocaleDateString()}`,
-                      })),
-                    ]}
-                  />
-                  {selectedReservation && room && roomType && (
-                    <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <p className="text-sm text-gray-500">Room Number</p>
-                          <p className="font-medium">{room.roomNumber}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-500">Room Type</p>
-                          <p className="font-medium">{roomType.name}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-500">Check-in</p>
-                          <p className="font-medium">
-                            {new Date(
-                              selectedReservation.checkIn
-                            ).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-500">Check-out</p>
-                          <p className="font-medium">
-                            {new Date(
-                              selectedReservation.checkOut
-                            ).toLocaleDateString()}
-                          </p>
-                        </div>
+              <>
+                <Select
+                  label="Select Reservation"
+                  value={selectedReferenceId}
+                  onChange={(e) => setSelectedReferenceId(e.target.value)}
+                  options={[
+                    { value: "", label: "Select a reservation" },
+                    ...reservations.map((r) => ({
+                      value: r.id,
+                      label: `${r.id} - ${new Date(
+                        r.checkIn
+                      ).toLocaleDateString()} to ${new Date(
+                        r.checkOut
+                      ).toLocaleDateString()}`,
+                    })),
+                  ]}
+                />
+                {selectedReservation && room && roomType && (
+                  <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm text-gray-500">Room Number</p>
+                        <p className="font-medium">{room.roomNumber}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Room Type</p>
+                        <p className="font-medium">{roomType.name}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Check-in</p>
+                        <p className="font-medium">
+                          {new Date(
+                            selectedReservation.checkIn
+                          ).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Check-out</p>
+                        <p className="font-medium">
+                          {new Date(
+                            selectedReservation.checkOut
+                          ).toLocaleDateString()}
+                        </p>
                       </div>
                     </div>
-                  )}
-                </>
-              ) : (
-                <>
-                  <Select
-                    label="Select Event"
-                    value={selectedReferenceId}
-                    onChange={(e) => setSelectedReferenceId(e.target.value)}
-                    options={[
-                      { value: "", label: "Select an event" },
-                      ...events.map((e) => ({
-                        value: e.id,
-                        label: `${e.name} - ${new Date(
-                          e.startDateTime
-                        ).toLocaleDateString()}`,
-                      })),
-                    ]}
-                  />
-                  {selectedEvent && hall && (
-                    <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <p className="text-sm text-gray-500">Event Name</p>
-                          <p className="font-medium">{selectedEvent.name}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-500">Event Type</p>
-                          <p className="font-medium">{selectedEvent.type}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-500">Hall</p>
-                          <p className="font-medium">{hall.name}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-500">Attendees</p>
-                          <p className="font-medium">
-                            {selectedEvent.expectedAttendees}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-500">
-                            Start Date & Time
-                          </p>
-                          <p className="font-medium">
-                            {new Date(
-                              selectedEvent.startDateTime
-                            ).toLocaleString()}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-500">
-                            End Date & Time
-                          </p>
-                          <p className="font-medium">
-                            {new Date(
-                              selectedEvent.endDateTime
-                            ).toLocaleString()}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </>
-              )}
+                  </div>
+                )}
+              </>
             </div>
           </Card>
 
@@ -574,14 +474,7 @@ export const CreateInvoice: React.FC = () => {
                     </span>
                   </div>
                 )}
-                {chargeBreakdown.eventCharges !== undefined && (
-                  <div className="flex justify-between">
-                    <span>Event Charges:</span>
-                    <span className="font-semibold">
-                      LKR {chargeBreakdown.eventCharges.toLocaleString()}
-                    </span>
-                  </div>
-                )}
+
                 {chargeBreakdown.mealPlanTotal !== undefined &&
                   chargeBreakdown.mealPlanTotal > 0 && (
                     <div className="flex justify-between">
